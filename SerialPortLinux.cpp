@@ -60,10 +60,10 @@ int Serial::readData(unsigned char *buffer, unsigned int nbChar)
     int bytes_avail;
     ioctl(fd, FIONREAD, &bytes_avail);
 
-    if (bytes_avail > 256) {
+    if (bytes_avail > 1024) {
         //logd(TAG, "Buffer overflow!\n");
         std::cout << "Buffer overflow!\n";
-        bytes_avail = 256;
+        bytes_avail = 1024;
     } else if (bytes_avail > nbChar)
         bytes_avail = nbChar; 
 

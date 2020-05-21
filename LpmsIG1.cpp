@@ -1631,36 +1631,43 @@ bool IG1::parseModbusByte(int n)
             {
                 packet.rxState = PACKET_ADDRESS0; 
                 packet.rawDataIndex = 0;
+                packet.cs = 0;
             }
             break;
 
         case PACKET_ADDRESS0:
             packet.address = b;
+            packet.cs += b;
             packet.rxState = PACKET_ADDRESS1;
             break;
 
         case PACKET_ADDRESS1:
             packet.address += ((unsigned)b * 256);
+            packet.cs += b;
             packet.rxState = PACKET_FUNCTION0;
             break;
 
         case PACKET_FUNCTION0:
             packet.function = b;
+            packet.cs += b;
             packet.rxState = PACKET_FUNCTION1;
             break;
 
         case PACKET_FUNCTION1:
             packet.function += ((unsigned)b * 256);
+            packet.cs += b;
             packet.rxState = PACKET_LENGTH0;
             break;
 
         case PACKET_LENGTH0:
             packet.length = b;
+            packet.cs += b;
             packet.rxState = PACKET_LENGTH1;
             break;
 
         case PACKET_LENGTH1:
             packet.length += ((unsigned)b * 256);
+            packet.cs += b;
             if (packet.length > LPPACKET_MAX_BUFFER)
                 packet.rxState = PACKET_START;
             else 
@@ -1709,10 +1716,9 @@ bool IG1::parseModbusByte(int n)
         case PACKET_END1:
             if (b == BYTE_END1) 
             {
-                uint16_t cs = packet.address + packet.length + packet.function;
                 for (int j = 0; j < packet.length; ++j)
-                    cs += packet.data[j];
-                if (cs == packet.chksum)
+                    packet.cs += packet.data[j];
+                if (packet.cs == packet.chksum)
                     parseSensorData(packet);
             }
 

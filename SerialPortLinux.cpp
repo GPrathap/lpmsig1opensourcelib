@@ -66,6 +66,7 @@ int Serial::readData(unsigned char *buffer, unsigned int nbChar)
         bytes_avail = 256;
     } else if (bytes_avail > nbChar)
         bytes_avail = nbChar; 
+
     int n = ::read(fd, buffer, bytes_avail);//sizeof(rxBuffer));  // read up to 100 characters if ready to read
     
     return n;
@@ -125,7 +126,7 @@ int Serial::set_interface_attribs (int fd, int speed, int parity)
     tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
 
     tty.c_iflag &= ~(IXON | IXOFF | IXANY |INLCR | IGNCR | ICRNL); //enable xon
-    tty.c_iflag |=IXON;
+    tty.c_iflag |=IXOFF;
 
     tty.c_cflag |= (CLOCAL | CREAD);// ignore modem controls,
                                     // enable reading

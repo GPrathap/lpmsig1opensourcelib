@@ -26,7 +26,7 @@ IG1::IG1()
 
     connectionMode = Serial::MODE_VCP;
     connectionInterface = COMMUNICATION_INTERFACE_232;
-    ctrlGpio = 0;
+    ctrlGpio = -1;
     ctrlGpioToggleWaitMs = DEFAULT_GPIO_TOGGLE_WAIT_MS;
     init();
 }
@@ -208,9 +208,9 @@ bool IG1::disconnect()
     //incomingDataRate = 0;
     isStopThread = true;
 
-    if (ctrlGpio != 0)
+    if (ctrlGpio >= 0)
      	gpioUnexport(ctrlGpio);
-    ctrlGpio = 0;
+    ctrlGpio = -1;
 
     if (t != NULL)
         t->join();
@@ -238,13 +238,15 @@ void IG1::setConnectionInterface(int interface)
 
 void IG1::setControlGPIOForRs485(unsigned int gpio)
 {
+    if (gpio < 0)
+        return;
+
     ctrlGpio = gpio;
 
     gpioExport(ctrlGpio);
     gpioSetDirection(ctrlGpio, 1);
 
     gpioSetValue(ctrlGpio, 1); //TX
-    //gpioSetValue(ctrlGpio, 0); //RX
 }
 
  void IG1::setControlGPIOToggleWaitMs(unsigned int ms)
@@ -1010,7 +1012,7 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
     if (data == NULL)
         length = 0;
 
-    if(ctrlGpio != 0)
+    if(ctrlGpio >= 0)
     {
         gpioSetValue(ctrlGpio, 1); //TX
       	this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//nanoseconds
@@ -1052,7 +1054,7 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
 #endif
 
 
-    if(ctrlGpio != 0)
+    if(ctrlGpio >= 0)
     {
         this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//nanoseconds
         gpioSetValue(ctrlGpio, 0); //RX

@@ -21,6 +21,14 @@ set(lpms_ig1_node_SRCS
     src/lpms_ig1_node.cpp
 )
 
+set(lpms_ig1_rs485_node_SRCS
+    src/lpms_ig1_rs485_node.cpp
+)
+
+set(lpms_ig1_rs485_client_SRCS
+    src/lpms_ig1_rs485_client.cpp
+)
+
 set(lpms_be1_node_SRCS
     src/lpms_be1_node.cpp
 )
@@ -38,6 +46,22 @@ target_link_libraries(lpms_ig1_node
   LpmsIG1_OpenSourceLib.so
  )
 add_dependencies(lpms_ig1_node ${catkin_EXPORTED_TARGETS})
+
+# lpms_ig1_rs485_node
+add_executable(lpms_ig1_rs485_node ${lpms_ig1_rs485_node_SRCS})
+target_link_libraries(lpms_ig1_rs485_node
+  ${catkin_LIBRARIES}
+  LpmsIG1_OpenSourceLib.so
+ )
+add_dependencies(lpms_ig1_rs485_node ${catkin_EXPORTED_TARGETS})
+
+# lpms_ig1_rs485_client
+add_executable(lpms_ig1_rs485_client ${lpms_ig1_rs485_client_SRCS})
+target_link_libraries(lpms_ig1_rs485_client
+  ${catkin_LIBRARIES}
+  LpmsIG1_OpenSourceLib.so
+ )
+add_dependencies(lpms_ig1_rs485_client ${catkin_EXPORTED_TARGETS})
 
 # lpms_be1_node
 add_executable(lpms_be1_node ${lpms_be1_node_SRCS})

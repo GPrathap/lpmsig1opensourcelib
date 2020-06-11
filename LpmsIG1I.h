@@ -6,6 +6,10 @@
 #endif
 #include "SensorDataI.h"
 
+//
+#define COMMUNICATION_INTERFACE_232 0
+#define COMMUNICATION_INTERFACE_485 1
+
 // Sensor status
 #define STATUS_DISCONNECTED     0
 #define STATUS_CONNECTING       1
@@ -42,6 +46,12 @@ public:
 #endif
 
     virtual bool disconnect() = 0;
+
+    virtual void setConnectionInterface(int interface) = 0;
+
+    virtual void setControlGPIOForRs485(unsigned int gpio) = 0;
+    virtual void setControlGPIOToggleWaitMs(unsigned int ms) = 0;
+
 
     /////////////////////////////////////////////
     // Commands:

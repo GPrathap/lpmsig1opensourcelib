@@ -89,6 +89,11 @@ struct LPPacket
 #define WAIT_FOR_CALIBRATION_DATA       4
 #define WAIT_FOR_SENSOR_SETTINGS        5
 
+
+#define SYSFS_GPIO_DIR "/sys/class/gpio"
+#define DEFAULT_GPIO_TOGGLE_WAIT_MS     1
+#define MAX_BUF 64
+
 struct IG1Command
 {
     short command;
@@ -158,7 +163,10 @@ public:
 #endif
 
     bool disconnect();
-    void setConnectionMode(int);
+    void setConnectionMode(int mode);
+    void setConnectionInterface(int interface);
+    void setControlGPIOForRs485(unsigned int gpio);
+    void setControlGPIOToggleWaitMs(unsigned int ms);
 
     /////////////////////////////////////////////
     // Commands:
@@ -632,6 +640,13 @@ private:
     void addCommandQueue(IG1Command cmd); 
     void clearCommandQueue();
 
+
+    int gpioExport(unsigned int gpio);
+    int gpioUnexport(unsigned int gpio);
+    int gpioSetDirection(unsigned int gpio, unsigned int out_flag);
+    int gpioSetValue(unsigned int gpio, unsigned int value);
+    int gpioGetValue(unsigned int gpio, unsigned int *value);
+
 private:
 
     // serial uart
@@ -643,8 +658,13 @@ private:
 #endif
     int baudrate;
     std::string sensorId;
-    int connectionMode;
-
+    int connectionMode;         // VCP / USB Xpress
+    int connectionInterface;    // 232-TTL/485
+    
+    // RS485 Settings
+    unsigned int ctrlGpio;
+    unsigned int ctrlGpioToggleWaitMs;
+    
     // LPBus
     LPPacket packet;
 

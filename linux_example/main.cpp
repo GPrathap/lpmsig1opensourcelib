@@ -29,17 +29,15 @@ void printTask()
 {
     while (sensor1->getStatus() != STATUS_DISCONNECTED && printThreadIsRunning)
     {
-        // get and print sensor data
-        if (sensor1->hasImuData())
-        {
-            IG1ImuDataI sd;
-            sensor1->getImuData(sd);
-
-            //logd(TAG, "t:%.3f accX: %.2f accY: %.2f accZ: %.2f\r", sd.timestamp*0.002f, sd.accRaw.data[0], sd.accRaw.data[1], sd.accRaw.data[2]);
-            logd(TAG, "t:%.3f eulerX: %.2f eulerY: %.2f eulerZ: %.2f\r", sd.timestamp*0.002f, sd.euler.data[0], sd.euler.data[1], sd.euler.data[2]);
-        }
-        this_thread::sleep_for(chrono::milliseconds(10));
-    }
+        sensor1->sendCommand(GET_IMU_DATA, 0, NULL);
+        
+        IG1ImuDataI sd;
+        sensor1->getImuData(sd);
+        float freq = sensor1->getDataFrequency() ;
+        logd(TAG, "t:%d %.3f eulerX: %.2f eulerY: %.2f eulerZ: %.2f Hz:%.3f\r\n", sd.timestamp, sd.timestamp*0.002f, sd.euler.data[0], sd.euler.data[1], sd.euler.data[2], freq);
+            
+        this_thread::sleep_for(chrono::milliseconds(20));
+    } 
 }
 
 void printMenu()
@@ -57,19 +55,20 @@ void printMenu()
 int main(int argc, char** argv)
 {
 
-    string comportNo = "/dev/ttyUSB0";
+    string comportNo = "/dev/ttyAMA0";
 
-    int baudrate = 921600;
+    int baudrate = 115200;
 
     // Create LpmsIG1 object with corresponding comport and baudrate
     sensor1 = IG1Factory();
+    sensor1->setConnectionInterface(COMMUNICATION_INTERFACE_485);
+    sensor1->setControlGPIOForRs485(2);
 
     cout << "connecting to sensor\r\n";
     // Connects to sensor
     if (!sensor1->connect(comportNo, baudrate))
     {
-        //logd(TAG, "Error connecting to sensor\n");
-        cout << "Error connecting to sensor\n";
+        logd(TAG, "Error connecting to sensor\n");
         sensor1->release();
         this_thread::sleep_for(chrono::milliseconds(1000));
         return 0;
@@ -82,9 +81,7 @@ int main(int argc, char** argv)
     }while(!(sensor1->getStatus() == STATUS_CONNECTED));
 
     printMenu();
-
-    printThread = new std::thread(printTask);
-
+    
     bool quit = false;
     while (!quit)
     {

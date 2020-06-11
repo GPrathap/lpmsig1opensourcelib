@@ -25,6 +25,9 @@ IG1::IG1()
     baudrate = LPMS_UART_BAUDRATE_921600;
 
     connectionMode = Serial::MODE_VCP;
+    connectionInterface = COMMUNICATION_INTERFACE_232;
+    ctrlGpio = 0;
+    ctrlGpioToggleWaitMs = DEFAULT_GPIO_TOGGLE_WAIT_MS;
     init();
 }
 
@@ -204,6 +207,11 @@ bool IG1::disconnect()
 
     //incomingDataRate = 0;
     isStopThread = true;
+
+    if (ctrlGpio != 0)
+     	gpioUnexport(ctrlGpio);
+    ctrlGpio = 0;
+
     if (t != NULL)
         t->join();
     t = NULL;
@@ -222,6 +230,27 @@ bool IG1::disconnect()
     return true;
 }
 
+
+void IG1::setConnectionInterface(int interface)
+{
+	connectionInterface = interface;
+}
+
+void IG1::setControlGPIOForRs485(unsigned int gpio)
+{
+    ctrlGpio = gpio;
+
+    gpioExport(ctrlGpio);
+    gpioSetDirection(ctrlGpio, 1);
+
+    gpioSetValue(ctrlGpio, 1); //TX
+    //gpioSetValue(ctrlGpio, 0); //RX
+}
+
+ void IG1::setControlGPIOToggleWaitMs(unsigned int ms)
+ {
+        ctrlGpioToggleWaitMs = ms;
+ }
 
 /////////////////////////////////////
 // Commands:
@@ -251,7 +280,8 @@ void IG1::commandGetSensorID(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+    	addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetSensorID(uint32_t id)
@@ -267,7 +297,8 @@ void IG1::commandSetSensorID(uint32_t id)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+    	addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 //Sensor Freq
@@ -278,7 +309,8 @@ void IG1::commandGetSensorFrequency(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetSensorFrequency(uint32_t freq)
@@ -294,7 +326,8 @@ void IG1::commandSetSensorFrequency(uint32_t freq)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetSensorGyroRange(void)
@@ -304,7 +337,8 @@ void IG1::commandGetSensorGyroRange(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetSensorGyroRange(uint32_t range)
@@ -320,7 +354,8 @@ void IG1::commandSetSensorGyroRange(uint32_t range)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandStartGyroCalibration(void)
@@ -330,7 +365,8 @@ void IG1::commandStartGyroCalibration(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(START_GYR_CALIBRATION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetSensorAccRange(void)
@@ -340,7 +376,8 @@ void IG1::commandGetSensorAccRange(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetSensorAccRange(uint32_t range)
@@ -356,7 +393,8 @@ void IG1::commandSetSensorAccRange(uint32_t range)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetSensorMagRange(void)
@@ -366,7 +404,8 @@ void IG1::commandGetSensorMagRange(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_MAG_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetSensorMagRange(uint32_t range)
@@ -382,7 +421,8 @@ void IG1::commandSetSensorMagRange(uint32_t range)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_MAG_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetSensorUseRadianOutput(void)
@@ -393,7 +433,8 @@ void IG1::commandGetSensorUseRadianOutput(void)
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetSensorUseRadianOutput(bool b)
@@ -409,7 +450,8 @@ void IG1::commandSetSensorUseRadianOutput(bool b)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandStartMagCalibration(void)
@@ -420,7 +462,8 @@ void IG1::commandStartMagCalibration(void)
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(START_MAG_CALIBRATION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandStopMagCalibration(void)
@@ -431,7 +474,8 @@ void IG1::commandStopMagCalibration(void)
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(STOP_MAG_CALIBRATION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetMagRefrence(void)
@@ -442,7 +486,8 @@ void IG1::commandGetMagRefrence(void)
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_MAG_REFERENCE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetMagRefrence(uint32_t reference)
@@ -458,7 +503,8 @@ void IG1::commandSetMagRefrence(uint32_t reference)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_MAG_REFERENCE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetSensorMagCalibrationTimeout(void)
@@ -468,7 +514,8 @@ void IG1::commandGetSensorMagCalibrationTimeout(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetSensorMagCalibrationTimeout(float second)
@@ -484,7 +531,8 @@ void IG1::commandSetSensorMagCalibrationTimeout(float second)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 //CAN bus
@@ -495,7 +543,8 @@ void IG1::commandGetCanStartId(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 
 }
 void IG1::commandSetCanStartId(uint32_t data)
@@ -511,7 +560,8 @@ void IG1::commandSetCanStartId(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetCanBaudrate(void)
@@ -521,7 +571,8 @@ void IG1::commandGetCanBaudrate(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 
 }
 
@@ -538,7 +589,8 @@ void IG1::commandSetCanBaudrate(uint32_t baudrate)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 
@@ -549,7 +601,8 @@ void IG1::commandGetCanDataPrecision(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetCanDataPrecision(uint32_t data)
@@ -565,7 +618,8 @@ void IG1::commandSetCanDataPrecision(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetCanChannelMode(void)
@@ -575,7 +629,8 @@ void IG1::commandGetCanChannelMode(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetCanChannelMode(uint32_t data)
@@ -591,7 +646,8 @@ void IG1::commandSetCanChannelMode(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetCanMapping(void)
@@ -601,7 +657,8 @@ void IG1::commandGetCanMapping(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetCanMapping(uint32_t map[16])
@@ -618,7 +675,8 @@ void IG1::commandSetCanMapping(uint32_t map[16])
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetCanHeartbeat(void)
@@ -628,7 +686,8 @@ void IG1::commandGetCanHeartbeat(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetCanHeartbeat(uint32_t data)
@@ -644,7 +703,8 @@ void IG1::commandSetCanHeartbeat(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetFilterMode(uint32_t data)
@@ -660,7 +720,8 @@ void IG1::commandSetFilterMode(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetFilterMode(void)
@@ -670,7 +731,8 @@ void IG1::commandGetFilterMode(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetGyroAutoCalibration(bool enable)
@@ -686,7 +748,8 @@ void IG1::commandSetGyroAutoCalibration(bool enable)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetGyroAutoCalibration(void)
@@ -696,7 +759,8 @@ void IG1::commandGetGyroAutoCalibration(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetOffsetMode(uint32_t data)
@@ -711,8 +775,8 @@ void IG1::commandSetOffsetMode(uint32_t data)
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
-    //addCommandQueue(IG1Command(SET_ORIENTATION_OFFSET, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandResetOffsetMode(void)
@@ -722,7 +786,8 @@ void IG1::commandResetOffsetMode(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(RESET_ORIENTATION_OFFSET, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSaveGPSState(void)
@@ -732,7 +797,8 @@ void IG1::commandSaveGPSState(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(SAVE_GPS_STATE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandClearGPSState(void)
@@ -742,7 +808,8 @@ void IG1::commandClearGPSState(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(CLEAR_GPS_STATE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetGpsTransmitData(uint32_t data, uint32_t data1)
@@ -759,7 +826,8 @@ void IG1::commandSetGpsTransmitData(uint32_t data, uint32_t data1)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetGpsTransmitData(void)
@@ -769,7 +837,8 @@ void IG1::commandGetGpsTransmitData(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetUartBaudRate(uint32_t data)
@@ -785,7 +854,8 @@ void IG1::commandSetUartBaudRate(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetUartBaudRate(void)
@@ -795,7 +865,8 @@ void IG1::commandGetUartBaudRate(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetUartDataFormat(uint32_t data)
@@ -811,7 +882,8 @@ void IG1::commandSetUartDataFormat(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetUartDataFormat(void)
@@ -821,7 +893,8 @@ void IG1::commandGetUartDataFormat(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetUartDataPrecision(uint32_t data)
@@ -837,7 +910,8 @@ void IG1::commandSetUartDataPrecision(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetUartDataPrecision(void)
@@ -847,7 +921,8 @@ void IG1::commandGetUartDataPrecision(void)
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandGetSensorInfo()
@@ -887,7 +962,8 @@ void IG1::commandGetSensorInfo()
     addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
 
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSaveParameters()
@@ -897,7 +973,8 @@ void IG1::commandSaveParameters()
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(WRITE_REGISTERS));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandResetFactory()
@@ -907,7 +984,8 @@ void IG1::commandResetFactory()
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(RESTORE_FACTORY_VALUE));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetTransmitData(uint32_t config)
@@ -923,7 +1001,8 @@ void IG1::commandSetTransmitData(uint32_t config)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
-    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    if (connectionInterface != COMMUNICATION_INTERFACE_485)
+	    addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
@@ -931,6 +1010,12 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
     if (data == NULL)
         length = 0;
 
+    if(ctrlGpio != 0)
+    {
+        gpioSetValue(ctrlGpio, 1); //TX
+      	this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//nanoseconds
+    }
+    
     uint8_t cmdBuffer[512];
     int idx = 0;
     cmdBuffer[idx++] = 0x3A;
@@ -959,11 +1044,19 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
     cmdBuffer[idx++] = 0x0D;
     cmdBuffer[idx++] = 0x0A;
 
+
 #ifdef _WIN32
     sp.writeData((const char*)cmdBuffer, idx);
 #else
     sp.writeData(cmdBuffer, idx);
 #endif
+
+
+    if(ctrlGpio != 0)
+    {
+        this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//nanoseconds
+        gpioSetValue(ctrlGpio, 0); //RX
+    }
 }
 
 /////////////////////////////////////
@@ -1423,7 +1516,7 @@ void IG1::updateData()
 
                 // Resend get transmit data if no response after 5 sec
                 if (transmitDataRegisterStatus == TDR_UPDATING && 
-                    mmTransmitDataRegisterStatus.measure() > 3000000)
+                    mmTransmitDataRegisterStatus.measure() > 10000000)
                 {
                     TDRRetryCount++;
                     logd(TAG, "Resend get transmit data: %d\n", TDRRetryCount);
@@ -1753,7 +1846,7 @@ bool IG1::parseSensorData(const LPPacket &p)
     /////////////////////////////////
     case REPLY_ACK:
         ackReceived = true;
-        //logd(TAG, "received ack\n",);
+        //logd(TAG, "received ack\n");
         mLockCommandQueue.lock();
         if (!commandQueue.empty())
         {
@@ -1785,7 +1878,6 @@ bool IG1::parseSensorData(const LPPacket &p)
     case GET_IMU_DATA:
     {
         if (transmitDataRegisterStatus != TDR_VALID) break;
-
         float dt = float(mmDataFreq.measure()) / 1000000.0f;
         //if (dt >0.0005)
         incomingDataRate = 0.995f*incomingDataRate + 0.005f * dt;
@@ -2230,4 +2322,153 @@ void IG1::clearCommandQueue()
     while (!commandQueue.empty())
         commandQueue.pop();
     mLockCommandQueue.unlock();
+}
+
+int IG1::gpioExport(unsigned int gpio)
+{
+    int fileDescriptor, length;
+    char commandBuffer[MAX_BUF];
+
+    fileDescriptor = open(SYSFS_GPIO_DIR "/export", O_WRONLY);
+    if (fileDescriptor < 0) {
+        char errorBuffer[128] ;
+        snprintf(errorBuffer,sizeof(errorBuffer), "gpioExport unable to open gpio%d",gpio) ;
+        perror(errorBuffer);
+        return fileDescriptor;
+    }
+
+    length = snprintf(commandBuffer, sizeof(commandBuffer), "%d", gpio);
+    if (write(fileDescriptor, commandBuffer, length) != length) {
+        perror("gpioExport");
+        return fileDescriptor ;
+
+    }
+    close(fileDescriptor);
+    return 0;
+}
+
+int IG1::gpioUnexport(unsigned int gpio)
+{
+    int fileDescriptor, length;
+    char commandBuffer[MAX_BUF];
+
+    fileDescriptor = open(SYSFS_GPIO_DIR "/unexport", O_WRONLY);
+    if (fileDescriptor < 0) {
+        char errorBuffer[128] ;
+        snprintf(errorBuffer,sizeof(errorBuffer), "gpioUnexport unable to open gpio%d",gpio) ;
+        perror(errorBuffer);
+        return fileDescriptor;
+    }
+
+    length = snprintf(commandBuffer, sizeof(commandBuffer), "%d", gpio);
+    if (write(fileDescriptor, commandBuffer, length) != length) {
+        perror("gpioUnexport") ;
+        return fileDescriptor ;
+    }
+    close(fileDescriptor);
+    return 0;
+}
+
+int IG1::gpioSetDirection(unsigned int gpio, unsigned int out_flag)
+{
+    int fileDescriptor;
+    char commandBuffer[MAX_BUF];
+
+    snprintf(commandBuffer, sizeof(commandBuffer), SYSFS_GPIO_DIR  "/gpio%d/direction", gpio);
+
+    fileDescriptor = open(commandBuffer, O_WRONLY);
+    if (fileDescriptor < 0) {
+        char errorBuffer[128] ;
+        snprintf(errorBuffer,sizeof(errorBuffer), "gpioSetDirection unable to open gpio%d",gpio) ;
+        perror(errorBuffer);
+        return fileDescriptor;
+    }
+
+    if (out_flag) {
+        if (write(fileDescriptor, "out", 4) != 4) {
+            perror("gpioSetDirection") ;
+            return fileDescriptor ;
+        }
+    }
+    else {
+        if (write(fileDescriptor, "in", 3) != 3) {
+            perror("gpioSetDirection") ;
+            return fileDescriptor ;
+        }
+    }
+    close(fileDescriptor);
+
+    return 0;
+}
+
+int IG1::gpioSetValue(unsigned int gpio, unsigned int value)
+{
+    int fileDescriptor;
+    char commandBuffer[MAX_BUF];
+
+    snprintf(commandBuffer, sizeof(commandBuffer), SYSFS_GPIO_DIR "/gpio%d/value", gpio);
+
+    fileDescriptor = open(commandBuffer, O_WRONLY);
+    if (fileDescriptor < 0) {
+        char errorBuffer[128] ;
+        snprintf(errorBuffer,sizeof(errorBuffer), "gpioSetValue unable to open gpio%d",gpio) ;
+        perror(errorBuffer);
+        return fileDescriptor;
+    }
+
+    if (value) {
+        if (write(fileDescriptor, "1", 2) != 2) {
+            perror("gpioSetValue") ;
+            return fileDescriptor ;
+        }
+    }
+    else {
+        if (write(fileDescriptor, "0", 2) != 2) {
+            perror("gpioSetValue") ;
+            return fileDescriptor ;
+        }
+    }
+
+//     if (value) {
+//     system("echo 1 > /sys/class/gpio/gpio388/value");
+//     }else{
+//       system("echo 0 > /sys/class/gpio/gpio388/value");
+//     }
+
+    close(fileDescriptor);
+    return 0;
+
+
+}
+
+int IG1::gpioGetValue(unsigned int gpio, unsigned int *value)
+{
+    int fileDescriptor;
+    char commandBuffer[MAX_BUF];
+    char ch;
+
+    snprintf(commandBuffer, sizeof(commandBuffer), SYSFS_GPIO_DIR "/gpio%d/value", gpio);
+
+    fileDescriptor = open(commandBuffer, O_RDONLY);
+    if (fileDescriptor < 0) {
+        char errorBuffer[128] ;
+        snprintf(errorBuffer,sizeof(errorBuffer), "gpioGetValue unable to open gpio%d",gpio) ;
+        perror(errorBuffer);
+        return fileDescriptor;
+    }
+
+    if (read(fileDescriptor, &ch, 1) != 1) {
+        perror("gpioGetValue") ;
+        return fileDescriptor ;
+     }
+
+    if (ch != '0') {
+        *value = 1;
+    } else {
+        *value = 0;
+    }
+
+    close(fileDescriptor);
+    return 0;
+
 }

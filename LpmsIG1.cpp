@@ -1012,12 +1012,6 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
     if (data == NULL)
         length = 0;
 
-    if(ctrlGpio >= 0)
-    {
-        gpioSetValue(ctrlGpio, 1); //TX
-      	this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//nanoseconds
-    }
-    
     uint8_t cmdBuffer[512];
     int idx = 0;
     cmdBuffer[idx++] = 0x3A;
@@ -1033,7 +1027,7 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
 
     if (data != NULL)
     {
-        for (int i = 0; i < length; ++i) 
+        for (int i = 0; i < length; ++i)
         {
             cmdBuffer[idx] = data[i];
             txLrcCheck += data[i];
@@ -1046,7 +1040,10 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
     cmdBuffer[idx++] = 0x0D;
     cmdBuffer[idx++] = 0x0A;
 
-
+    if(ctrlGpio >= 0)
+    {
+        gpioSetValue(ctrlGpio, 1); //TX
+    }
 #ifdef _WIN32
     sp.writeData((const char*)cmdBuffer, idx);
 #else
@@ -1056,7 +1053,7 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
 
     if(ctrlGpio >= 0)
     {
-        this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//nanoseconds
+        this_thread::sleep_for(chrono::microseconds(ctrlGpioToggleWaitMs));//microseconds
         gpioSetValue(ctrlGpio, 0); //RX
     }
 }
@@ -1708,7 +1705,7 @@ void IG1::updateData()
         }
     } while (autoReconnect && !isStopThread);
 
-    t = NULL;
+    //t = NULL;
 }
 
 bool IG1::parseModbusByte(int n)

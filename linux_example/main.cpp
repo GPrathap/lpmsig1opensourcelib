@@ -30,14 +30,15 @@ void printTask()
     while (sensor1->getStatus() != STATUS_DISCONNECTED && printThreadIsRunning)
     {
         sensor1->sendCommand(GET_IMU_DATA, 0, NULL);
-        
+
         IG1ImuDataI sd;
         sensor1->getImuData(sd);
         float freq = sensor1->getDataFrequency() ;
-        logd(TAG, "t:%d %.3f eulerX: %.2f eulerY: %.2f eulerZ: %.2f Hz:%.3f\r\n", sd.timestamp, sd.timestamp*0.002f, sd.euler.data[0], sd.euler.data[1], sd.euler.data[2], freq);
-            
-        this_thread::sleep_for(chrono::milliseconds(20));
-    } 
+        //logd(TAG, "t:%d %.3f eulerX: %.2f eulerY: %.2f eulerZ: %.2f Hz:%.3f\r\n", sd.timestamp, sd.timestamp*0.002f, sd.euler.data[0], sd.euler.data[1], sd.euler.data[2], freq);
+        logd(TAG, "t:%d %.3f qW: %.2f qX: %.2f qY: %.2f qZ: %.2f Hz:%.3f\r\n", sd.timestamp, sd.timestamp*0.002f, sd.quaternion.data[0], sd.quaternion.data[1], sd.quaternion.data[2], sd.quaternion.data[3], freq);
+
+        this_thread::sleep_for(chrono::milliseconds(10));
+    }
 }
 
 void printMenu()
@@ -55,14 +56,16 @@ void printMenu()
 int main(int argc, char** argv)
 {
 
-    string comportNo = "/dev/ttyAMA0";
+    string comportNo = "/dev/ttyTHS2";
 
-    int baudrate = 115200;
+//     int baudrate = 115200;
+    int baudrate = 230400;
 
     // Create LpmsIG1 object with corresponding comport and baudrate
     sensor1 = IG1Factory();
     sensor1->setConnectionInterface(COMMUNICATION_INTERFACE_485);
-    sensor1->setControlGPIOForRs485(2);
+    sensor1->setControlGPIOForRs485(388);
+    sensor1->setControlGPIOToggleWaitMs(400);
 
     cout << "connecting to sensor\r\n";
     // Connects to sensor
@@ -81,7 +84,7 @@ int main(int argc, char** argv)
     }while(!(sensor1->getStatus() == STATUS_CONNECTED));
 
     printMenu();
-    
+
     bool quit = false;
     while (!quit)
     {

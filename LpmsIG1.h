@@ -91,7 +91,7 @@ struct LPPacket
 
 
 #define SYSFS_GPIO_DIR "/sys/class/gpio"
-#define DEFAULT_GPIO_TOGGLE_WAIT_MS     1
+#define DEFAULT_GPIO_TOGGLE_WAIT_MS     400 //at 230400 bps
 #define MAX_BUF 64
 
 struct IG1Command

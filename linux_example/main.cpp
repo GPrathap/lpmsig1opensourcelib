@@ -27,6 +27,7 @@ void logd(std::string tag, const char* str, ...)
 
 void printTask()
 {
+    sensor1->commandGotoCommandMode();
     while (sensor1->getStatus() != STATUS_DISCONNECTED && printThreadIsRunning)
     {
         sensor1->sendCommand(GET_IMU_DATA, 0, NULL);
@@ -37,17 +38,19 @@ void printTask()
         //logd(TAG, "t:%d %.3f eulerX: %.2f eulerY: %.2f eulerZ: %.2f Hz:%.3f\r\n", sd.timestamp, sd.timestamp*0.002f, sd.euler.data[0], sd.euler.data[1], sd.euler.data[2], freq);
         logd(TAG, "t:%d %.3f qW: %.2f qX: %.2f qY: %.2f qZ: %.2f Hz:%.3f\r\n", sd.timestamp, sd.timestamp*0.002f, sd.quaternion.data[0], sd.quaternion.data[1], sd.quaternion.data[2], sd.quaternion.data[3], freq);
 
-        this_thread::sleep_for(chrono::milliseconds(10));
+        this_thread::sleep_for(chrono::milliseconds(20));
     }
 }
 
 void printMenu()
 {
+    cout <<  endl;
+    cout << "===================" << endl;
     cout << "Main Menu" << endl;
     cout << "===================" << endl;
     cout << "[h] Reset sensor heading" << endl;
     cout << "[i] Print sensor info" << endl;
-    cout << "[s] Print sensor settins" << endl;
+    cout << "[s] Print sensor settings" << endl;
     cout << "[p] Print sensor data" << endl;
     cout << "[q] quit" << endl;
     cout << endl;
@@ -58,14 +61,13 @@ int main(int argc, char** argv)
 
     string comportNo = "/dev/ttyTHS2";
 
-//     int baudrate = 115200;
     int baudrate = 230400;
 
     // Create LpmsIG1 object with corresponding comport and baudrate
     sensor1 = IG1Factory();
     sensor1->setConnectionInterface(COMMUNICATION_INTERFACE_485);
     sensor1->setControlGPIOForRs485(388);
-    sensor1->setControlGPIOToggleWaitMs(400);
+    sensor1->setControlGPIOToggleWaitMs(1);
 
     cout << "connecting to sensor\r\n";
     // Connects to sensor
@@ -79,10 +81,23 @@ int main(int argc, char** argv)
 
     do
     {
-        logd(TAG, "Wait for sensor connected\r\n");
-        this_thread::sleep_for(chrono::milliseconds(100));
-    }while(!(sensor1->getStatus() == STATUS_CONNECTED));
+        logd(TAG, "Waiting for sensor to connect\r\n");
+        this_thread::sleep_for(chrono::milliseconds(1000));
+    } while (
+        !(sensor1->getStatus() == STATUS_CONNECTED) && 
+        !(sensor1->getStatus() == STATUS_CONNECTION_ERROR)
+    );
 
+    if (sensor1->getStatus() != STATUS_CONNECTED)
+    {
+        logd(TAG, "Sensor connection error: %d.", sensor1->getStatus());
+        sensor1->release();
+        return -1;
+
+    }
+
+
+    logd(TAG, "Sensor connected\n");
     printMenu();
 
     bool quit = false;
@@ -135,7 +150,9 @@ int main(int argc, char** argv)
 
 
     printThread->join();
+    this_thread::sleep_for(chrono::milliseconds(1000));
     // release sensor resources
     sensor1->release();
+    this_thread::sleep_for(chrono::milliseconds(1000));
     logd(TAG, "Bye\n");
 }

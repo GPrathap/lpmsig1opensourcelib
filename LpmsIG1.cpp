@@ -236,7 +236,7 @@ void IG1::setConnectionInterface(int interface)
 	connectionInterface = interface;
 }
 
-void IG1::setControlGPIOForRs485(unsigned int gpio)
+void IG1::setControlGPIOForRs485(int gpio)
 {
     if (gpio < 0)
         return;
@@ -244,9 +244,13 @@ void IG1::setControlGPIOForRs485(unsigned int gpio)
     ctrlGpio = gpio;
 
     gpioExport(ctrlGpio);
+    this_thread::sleep_for(chrono::milliseconds(100));
+
     gpioSetDirection(ctrlGpio, 1);
+    this_thread::sleep_for(chrono::milliseconds(100));
 
     gpioSetValue(ctrlGpio, 1); //TX
+    this_thread::sleep_for(chrono::milliseconds(100));
 }
 
  void IG1::setControlGPIOToggleWaitMs(unsigned int ms)
@@ -929,7 +933,8 @@ void IG1::commandGetUartDataPrecision(void)
 
 void IG1::commandGetSensorInfo()
 {
-    if (sensorStatus != STATUS_CONNECTED)
+    if (sensorStatus != STATUS_CONNECTING &&
+        sensorStatus != STATUS_CONNECTED)
         return;
     clearCommandQueue();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
@@ -1043,6 +1048,7 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
     if(ctrlGpio >= 0)
     {
         gpioSetValue(ctrlGpio, 1); //TX
+        this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//milliseconds
     }
 #ifdef _WIN32
     sp.writeData((const char*)cmdBuffer, idx);
@@ -1053,7 +1059,7 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
 
     if(ctrlGpio >= 0)
     {
-        this_thread::sleep_for(chrono::microseconds(ctrlGpioToggleWaitMs));//microseconds
+        this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//milliseconds
         gpioSetValue(ctrlGpio, 0); //RX
     }
 }
@@ -1467,7 +1473,7 @@ void IG1::updateData()
             incomingDataRate = 0;
             isDataSaving = false;
 
-            sensorStatus = STATUS_CONNECTED;
+            sensorStatus = STATUS_CONNECTING;
             mmDataFreq.reset();
             mmDataIdle.reset();
             mmCommandTimer.reset();
@@ -1507,6 +1513,7 @@ void IG1::updateData()
                 // Get transmit data config
                 if (transmitDataRegisterStatus == TDR_INVALID) 
                 {
+                    sensorStatus = STATUS_CONNECTING;
                     logd(TAG, "Send get transmit data\n");
                     transmitDataRegisterStatus = TDR_UPDATING;
                     mmTransmitDataRegisterStatus.reset();
@@ -1515,8 +1522,9 @@ void IG1::updateData()
 
                 // Resend get transmit data if no response after 5 sec
                 if (transmitDataRegisterStatus == TDR_UPDATING && 
-                    mmTransmitDataRegisterStatus.measure() > 10000000)
+                    mmTransmitDataRegisterStatus.measure() > 5000000)
                 {
+                    sensorStatus = STATUS_CONNECTING;
                     TDRRetryCount++;
                     logd(TAG, "Resend get transmit data: %d\n", TDRRetryCount);
                     transmitDataRegisterStatus = TDR_UPDATING;
@@ -1524,13 +1532,19 @@ void IG1::updateData()
                     commandGetSensorInfo();
                 }
 
-                if (TDRRetryCount > 5) 
+                if (transmitDataRegisterStatus == TDR_VALID)
+                {
+                    sensorStatus = STATUS_CONNECTED;
+                }
+
+                if (TDRRetryCount > 3) 
                 {
                     TDRRetryCount = 0;
                     transmitDataRegisterStatus = TDR_ERROR;
                     stringstream ss;
                     ss << "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] Error getting transmit data register\n";
                     addSensorResponseToQueue(ss.str());
+                    sensorStatus = STATUS_CONNECTION_ERROR;
                 }
 
 
@@ -1542,9 +1556,6 @@ void IG1::updateData()
                 // parse data
                 if (readResult > 0)
                 {
-                    if (readResult >= INCOMING_DATA_MAX_LENGTH)
-                        logd(TAG, "data: %d\n", readResult);
-
                     mmDataIdle.reset();
                     //logd(TAG, "data: %d\n", readResult);
                     parseModbusByte(readResult);
@@ -1664,6 +1675,7 @@ void IG1::updateData()
                     errMsg = "Data timeout";
                     //sensorStatus = STATUS_DATA_TIMEOUT;
                 }
+                /*
                 else if (sensorUpdating)
                 {
                     errMsg = "Updating";
@@ -1674,9 +1686,8 @@ void IG1::updateData()
                     //errMsg = "Connected";
                     sensorStatus = STATUS_CONNECTED;
                 }
+                */
 
-
-                //Sleep(1);
                 this_thread::sleep_for(chrono::milliseconds(1));
             }
         }

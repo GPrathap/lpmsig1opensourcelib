@@ -136,7 +136,6 @@ struct IG1Command
 
 class IG1 : public IG1I
 {
-    const static int INCOMING_DATA_MAX_LENGTH = 2048;
 public:
     /////////////////////////////////////////////
     // Constructor/Destructor
@@ -165,7 +164,7 @@ public:
     bool disconnect();
     void setConnectionMode(int mode);
     void setConnectionInterface(int interface);
-    void setControlGPIOForRs485(unsigned int gpio);
+    void setControlGPIOForRs485(int gpio);
     void setControlGPIOToggleWaitMs(unsigned int ms);
 
     /////////////////////////////////////////////
@@ -662,7 +661,7 @@ private:
     int connectionInterface;    // 232-TTL/485
     
     // RS485 Settings
-    unsigned int ctrlGpio;
+    int ctrlGpio;
     unsigned int ctrlGpioToggleWaitMs;
     
     // LPBus

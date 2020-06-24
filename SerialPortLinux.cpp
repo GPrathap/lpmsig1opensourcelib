@@ -76,6 +76,7 @@ bool Serial::open(std::string portno, int baudrate)
         return false;
     } 
 
+    tcflush(fd,TCIOFLUSH);
     portNo = portno;
     this->connected = true;
     return true;
@@ -87,6 +88,8 @@ bool Serial::close()
     {
         //We're no longer connected
         this->connected = false;
+
+        tcflush(fd,TCIOFLUSH);
         //Close the serial handler
         ::close(fd);
     }
@@ -102,10 +105,10 @@ int Serial::readData(unsigned char *buffer, unsigned int nbChar)
     int bytes_avail;
     ioctl(fd, FIONREAD, &bytes_avail);
 
-    if (bytes_avail > 256) {
+    if (bytes_avail > INCOMING_DATA_MAX_LENGTH) {
         //logd(TAG, "Buffer overflow!\n");
         std::cout << "Buffer overflow!\n";
-        bytes_avail = 256;
+        bytes_avail = INCOMING_DATA_MAX_LENGTH;
     } else if (bytes_avail > nbChar)
         bytes_avail = nbChar; 
     int n = ::read(fd, buffer, bytes_avail);//sizeof(rxBuffer));  // read up to 100 characters if ready to read

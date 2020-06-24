@@ -49,7 +49,7 @@ public:
 
     virtual void setConnectionInterface(int interface) = 0;
 
-    virtual void setControlGPIOForRs485(unsigned int gpio) = 0;
+    virtual void setControlGPIOForRs485(int gpio) = 0;
     virtual void setControlGPIOToggleWaitMs(unsigned int ms) = 0;
 
 

@@ -23,6 +23,8 @@
 #endif
 
 
+const static int INCOMING_DATA_MAX_LENGTH = 2048;
+
 class Serial
 {
 public:

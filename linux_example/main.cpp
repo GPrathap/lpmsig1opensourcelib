@@ -27,10 +27,10 @@ void logd(std::string tag, const char* str, ...)
 
 void printTask()
 {
-    sensor1->commandGotoCommandMode();
+    sensor1->commandGotoStreamingMode();
     while (sensor1->getStatus() != STATUS_DISCONNECTED && printThreadIsRunning)
     {
-        sensor1->sendCommand(GET_IMU_DATA, 0, NULL);
+        //sensor1->sendCommand(GET_IMU_DATA, 0, NULL);
 
         IG1ImuDataI sd;
         sensor1->getImuData(sd);
@@ -58,10 +58,20 @@ void printMenu()
 
 int main(int argc, char** argv)
 {
-
-    string comportNo = "/dev/ttyTHS2";
-
+    string comportNo = "LPMSIG1-DEV-SENSOR";
     int baudrate = 230400;
+    
+    if (argc == 2)
+    {
+        comportNo = string(argv[1]);
+    }
+    else if (argc == 3)
+    {
+        comportNo = string(argv[1]);
+        baudrate = atoi(argv[2]);
+    }
+	
+	logd(TAG, "Connecting to %s @%d\n", comportNo.c_str(), baudrate);
 
     // Create LpmsIG1 object with corresponding comport and baudrate
     sensor1 = IG1Factory();
@@ -69,7 +79,6 @@ int main(int argc, char** argv)
     sensor1->setControlGPIOForRs485(388);
     sensor1->setControlGPIOToggleWaitMs(1);
 
-    cout << "connecting to sensor\r\n";
     // Connects to sensor
     if (!sensor1->connect(comportNo, baudrate))
     {
@@ -143,16 +152,18 @@ int main(int argc, char** argv)
 
         default:
             printThreadIsRunning = false;
-            break;
+	        if (printThread)
+                printThread->join();
+          break;
         }
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 
 
-    printThread->join();
-    this_thread::sleep_for(chrono::milliseconds(1000));
+    if (printThread)
+        printThread->join();
+
     // release sensor resources
     sensor1->release();
-    this_thread::sleep_for(chrono::milliseconds(1000));
     logd(TAG, "Bye\n");
 }

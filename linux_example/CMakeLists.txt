@@ -40,12 +40,14 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_link_libraries(${CMAKE_PROJECT_NAME} LpmsIG1_OpenSourceLib)
     target_link_libraries(${CMAKE_PROJECT_NAME} rt)
     target_link_libraries(${CMAKE_PROJECT_NAME} pthread)
+    target_link_libraries(${CMAKE_PROJECT_NAME} udev)
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_link_libraries(${CMAKE_PROJECT_NAME} LpmsIG1_OpenSourceLibD)
     target_link_libraries(${CMAKE_PROJECT_NAME} rt)
     target_link_libraries(${CMAKE_PROJECT_NAME} pthread)
+    target_link_libraries(${CMAKE_PROJECT_NAME} udev)
 endif()
 
 

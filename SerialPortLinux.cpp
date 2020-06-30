@@ -6,6 +6,7 @@ Serial::Serial():
     portNo(""),
     connected(false)
 {
+	usbDeviceMap = createUsbDeviceMap();
 }
 
 Serial::~Serial()
@@ -18,6 +19,12 @@ bool Serial::open(std::string portno, int baudrate)
 {
     if (isConnected())
         close();
+
+    map<string, string>::iterator iter = usbDeviceMap.find(portno);
+    if (iter != usbDeviceMap.end())
+    {
+        portno = iter->second;
+    }
 
     fd = ::open (portno.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
@@ -81,6 +88,7 @@ bool Serial::open(std::string portno, int baudrate)
     this->connected = true;
     return true;
 }
+
 
 bool Serial::close()
 {
@@ -188,3 +196,41 @@ int Serial::set_interface_attribs (int fd, int speed, int parity)
     }
     return 0;
 }
+
+map<string, string> Serial::createUsbDeviceMap()
+{
+    map<string, string> map;
+ 
+    struct udev *udev;
+    struct udev_device *dev;
+    struct udev_enumerate *enumerate;
+    struct udev_list_entry *list, *node;
+    const char *path;
+
+    udev = udev_new();
+    if (!udev) 
+    {
+        printf("can not create udev");
+        return map;
+    }
+
+    enumerate = udev_enumerate_new(udev);
+    udev_enumerate_add_match_subsystem(enumerate, "tty");
+    udev_enumerate_scan_devices(enumerate);
+
+    list = udev_enumerate_get_list_entry(enumerate);
+    udev_list_entry_foreach(node, list) 
+    {
+        path = udev_list_entry_get_name(node);
+        dev = udev_device_new_from_syspath(udev, path);
+        if (udev_device_get_property_value(dev, "ID_SERIAL_SHORT") &&
+            udev_device_get_property_value(dev, "DEVNAME"))
+        {
+            string serialID(udev_device_get_property_value(dev, "ID_SERIAL_SHORT"));
+            string devName(udev_device_get_property_value(dev, "DEVNAME"));
+            map.insert(pair<string, string>(serialID, devName));
+        }
+        udev_device_unref(dev);
+    }
+}
+

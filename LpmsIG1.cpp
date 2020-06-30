@@ -1425,7 +1425,7 @@ void IG1::updateData()
 #ifdef _WIN32
                     logd(TAG, "COM:%d connection established\n", portno);
 #else
-                    logd(TAG, "COM:%s connection established\n", portno.c_str());
+                    logd(TAG, "%s connection established\n", sp.getPortNo().c_str());
 #endif
             }
             else

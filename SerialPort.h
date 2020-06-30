@@ -1,7 +1,6 @@
 #ifndef SERIALCLASS_H_INCLUDED
 #define SERIALCLASS_H_INCLUDED
 
-#define ARDUINO_WAIT_TIME 2000
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +10,7 @@
 #ifdef _WIN32
 #include <windows.h>
 #include "SiUSBXp.h"
-#else
+#elif __linux__ 
 #include <stdio.h>      // standard input / output functions
 #include <stdlib.h>
 #include <errno.h>
@@ -20,6 +19,9 @@
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <cstring>
+#include <libudev.h>
+#include <iterator> 
+#include <map> 
 #endif
 
 
@@ -61,10 +63,14 @@ private:
     // SILAB
 	HANDLE	cyHandle;
     std::string idNumber;
-#else
+
+#elif __linux__ 
+
     int fd;
     std::string portNo;
-    int set_interface_attribs (int fd, int speed, int parity);
+
+    std::map<std::string, std::string> usbDeviceMap;
+
 #endif
 
     int usbMode;
@@ -77,9 +83,8 @@ public:
    
 #ifdef _WIN32
     bool open(int portno, int baudrate = BAUDRATE_9600);
-        // For silab
     bool open(std::string deviceId, int baudrate);
-#else
+#elif __linux__ 
     bool open(std::string portno, int baudrate = BAUDRATE_115200);
 #endif
 
@@ -93,18 +98,22 @@ public:
     int readData(unsigned char *buffer, unsigned int nbChar);
 #ifdef _WIN32
     bool writeData(const char *buffer, unsigned int nbChar);
-#else
+#elif __linux__ 
     bool writeData(unsigned char *buffer, unsigned int nbChar);
 #endif
     bool isConnected();
 
 #ifdef _WIN32
     int getPortNo() { return portNo; }
-#else
+#elif __linux__ 
     std::string getPortNo() { return portNo; }
 #endif 
 
-
+#ifdef __linux__ 
+    int set_interface_attribs (int fd, int speed, int parity);
+    std::map<std::string, std::string> createUsbDeviceMap();
+    
+#endif
 
 };
 

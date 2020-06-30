@@ -30,60 +30,18 @@ bool Serial::open(std::string portno, int baudrate)
     if (fd < 0)
     {
         //logd(TAG, "Error %d: Error opening %s: %s\n", errno,  portno.c_str(), strerror (errno));
-        std::cout << "Error opening" << errno;
+        std::cout << "Error opening " << errno << std::endl;
         return false;
-    }
-
-    switch (baudrate) {
-    case BAUDRATE_4800:
-        baudrate = B4800;
-        break;
-
-    case BAUDRATE_9600:
-        baudrate = B9600;
-        break;
-
-    case BAUDRATE_19200:
-        baudrate = B19200;
-        break;
-
-    case BAUDRATE_38400:
-        baudrate = B38400;
-        break;
-
-    case BAUDRATE_57600:
-        baudrate = B57600;
-        break;
-
-    case BAUDRATE_115200:
-        baudrate = B115200;
-        break;
-
-    case BAUDRATE_230400:
-        baudrate = B230400;
-        break;
-
-    case BAUDRATE_460800:
-        baudrate = B460800;
-        break;
-
-    case BAUDRATE_921600:
-        baudrate = B921600;
-        break;
-
-    default:
-        baudrate = B115200;
-        break;
     }
 
     if (set_interface_attribs (fd, baudrate, 0) == -1) {
 
         //logd(TAG, "Error configuring serial attributes");
-        std::cout << "Error configuring serial attributes";
+        std::cout << "Error configuring serial attributes" << std::endl;
         return false;
     } 
 
-    tcflush(fd,TCIOFLUSH);
+    //tcflush(fd,TCIOFLUSH);
     portNo = portno;
     this->connected = true;
     return true;
@@ -97,7 +55,7 @@ bool Serial::close()
         //We're no longer connected
         this->connected = false;
 
-        tcflush(fd,TCIOFLUSH);
+        //tcflush(fd,TCIOFLUSH);
         //Close the serial handler
         ::close(fd);
     }
@@ -119,6 +77,7 @@ int Serial::readData(unsigned char *buffer, unsigned int nbChar)
         bytes_avail = INCOMING_DATA_MAX_LENGTH;
     } else if (bytes_avail > nbChar)
         bytes_avail = nbChar; 
+
     int n = ::read(fd, buffer, bytes_avail);//sizeof(rxBuffer));  // read up to 100 characters if ready to read
     
     return n;
@@ -155,17 +114,17 @@ bool Serial::isConnected()
 
 int Serial::set_interface_attribs (int fd, int speed, int parity)
 {
-    struct termios tty;
-    memset (&tty, 0, sizeof tty);
-    if (tcgetattr (fd, &tty) != 0)
+    struct termios2 tty;
+
+
+    if (ioctl(fd, TCGETS2, &tty) < 0)
     {
-        //logd(TAG, "error %d from tcgetattr", errno);
-        std::cout << "errpr tcgetattr";
         return -1;
     }
-
-    cfsetospeed (&tty, speed);
-    cfsetispeed (&tty, speed);
+    tty.c_cflag &= ~CBAUD;
+    tty.c_cflag |= BOTHER;
+    tty.c_ispeed = speed;
+    tty.c_ospeed = speed;
 
     tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;     // 8-bit chars
     // disable IGNBRK for mismatched speed tests; otherwise receive break
@@ -177,8 +136,8 @@ int Serial::set_interface_attribs (int fd, int speed, int parity)
     tty.c_cc[VMIN]  = 0;            // read doesn't block
     tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
 
-    tty.c_iflag &= ~(IXON | IXOFF | IXANY |INLCR | IGNCR | ICRNL); // shut off xon/xoff ctrl
-
+    tty.c_iflag &= ~(IXON | IXOFF | IXANY |INLCR | IGNCR | ICRNL); //enable xon
+    tty.c_iflag |=IXOFF;
 
     tty.c_cflag |= (CLOCAL | CREAD);// ignore modem controls,
                                     // enable reading
@@ -188,12 +147,11 @@ int Serial::set_interface_attribs (int fd, int speed, int parity)
     tty.c_cflag &= ~CSTOPB;
     tty.c_cflag &= ~CRTSCTS;
 
-    if (tcsetattr (fd, TCSANOW, &tty) != 0)
+    if (ioctl(fd, TCSETS2, &tty) < 0)
     {
-        //logd(TAG, "error %d from tcsetattr", errno);
-        std::cout << "errpr tcsetattr";
         return -1;
     }
+    
     return 0;
 }
 

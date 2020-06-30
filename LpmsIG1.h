@@ -51,6 +51,7 @@ struct LPPacket
     uint8_t data[LPPACKET_MAX_BUFFER];
     uint16_t rawDataIndex;
     uint16_t chksum;
+    uint16_t cs;
 
 
     LPPacket()

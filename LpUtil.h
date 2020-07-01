@@ -51,7 +51,7 @@ union floatArray2char {
     uint8_t c[24];
 };
 
-void logd(std::string tag, const char* str, ...);
+//void logd(std::string tag, const char* str, ...);
 
 const std::string currentDateTime(const char* format);
 const int currentDateTimeInt();

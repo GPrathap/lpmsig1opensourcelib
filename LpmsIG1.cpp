@@ -31,7 +31,7 @@ IG1::IG1()
     ctrlGpioToggleWaitMs = DEFAULT_GPIO_TOGGLE_WAIT_MS;
 
     autoReconnect = false;
-    verboseOutput = false;
+    reconnectCount = 0;
 }
 
 IG1::IG1(const IG1 &obj)
@@ -49,7 +49,12 @@ IG1::~IG1()
 
 void IG1::init()
 {
+    // LPBus
+    packet.reset();
+
     // Internal thread
+    isStopThread = false;
+    connectionState = CONNECTION_STATE_DISCONNECTED;
     mmDataFreq.reset();
     mmDataIdle.reset();
     mmUpdating.reset();
@@ -57,13 +62,13 @@ void IG1::init()
     // Sensor
     sensorStatus = STATUS_DISCONNECTED;
     errMsg = "";
-    timeoutThreshold = 5000000;
+    timeoutThreshold = TIMEOUT_IDLE;
     memset(incomingData, 0, INCOMING_DATA_MAX_LENGTH);
 
-    // stats
+    // Stats
     incomingDataRate = 0;
 
-    // command queue
+    // Command queue
     mLockCommandQueue.lock();
     while (!commandQueue.empty())
     {
@@ -73,7 +78,7 @@ void IG1::init()
     mmCommandTimer.reset();
     lastSendCommandTime = 0;
 
-    // response
+    // Response
     mLockSensorResponseQueue.lock();
     while (!sensorResponseQueue.empty())
     {
@@ -81,27 +86,22 @@ void IG1::init()
     }
     mLockSensorResponseQueue.unlock();
 
-    // info
+    // Info
     hasNewInfo = false;
     sensorInfo.reset();
 
-    // settings
+    // Sensor settings
     hasNewSettings = false;
     sensorSettings.reset();
     transmitDataRegisterStatus = TDR_INVALID;
     mmTransmitDataRegisterStatus.reset();
 
-    // imu data
+    // Imu data
     sensorDataQueueSize = SENSOR_DATA_QUEUE_SIZE;
-    mLockImuDataQueue.lock();
-    while (!imuDataQueue.empty())
-    {
-        imuDataQueue.pop();
-    }
-    mLockImuDataQueue.unlock();
+    clearSensorDataQueue();
     latestImuData.reset();
 
-    // gps data
+    // Gps data
     mLockGpsDataQueue.lock();
     while (!gpsDataQueue.empty())
     {
@@ -110,7 +110,7 @@ void IG1::init()
     mLockGpsDataQueue.unlock();
     latestGpsData.reset();
 
-    // firmware update
+    // Firmware update
     sensorUpdating = false;
     ackReceived = false;
     nackReceived = false;
@@ -138,18 +138,22 @@ void IG1::init()
 void IG1::setPCBaudrate(int baud)
 {
     baudrate = baud;
-    if (verboseOutput) logd(TAG, "Baudrate: %d\n", baudrate);
+    log.d(TAG, "Baudrate: %d\n", baudrate);
 }
 
 #ifdef _WIN32
 void IG1::setPCPort(int port)
-#else
-void IG1::setPCPort(string port)
-#endif
 {
     portno = port;
-    if (verboseOutput) logd(TAG, "COM: %d\n", baudrate);
+    log.d(TAG, "COM: %d\n", port);
 }
+#else
+void IG1::setPCPort(string port)
+{
+    portno = port;
+    log.d(TAG, "COM: %s\n", port);
+}
+#endif
 
 #ifdef _WIN32
 int IG1::connect(int _portno, int _baudrate)
@@ -161,8 +165,7 @@ int IG1::connect(string _portno, int _baudrate)
         sensorStatus == STATUS_CONNECTED  ||
         sensorStatus == STATUS_UPDATING)
     {
-        if (verboseOutput)
-            logd(TAG, "Another connection established\n");
+        log.d(TAG, "Another connection established\n");
     } 
     else 
     {
@@ -182,8 +185,7 @@ int IG1::connect(std::string sensorName ,int _baudrate)
         sensorStatus == STATUS_CONNECTED ||
         sensorStatus == STATUS_UPDATING)
     {
-        if (verboseOutput)
-            logd(TAG, "Another connection established\n");
+        log.d(TAG, "Another connection established\n");
     }
     else
     {
@@ -214,18 +216,21 @@ bool IG1::disconnect()
     if (sp.isConnected())
     {
         sp.close();
-        if (verboseOutput)
-#ifdef _WIN32
-            logd(TAG, "COM:%d disconnected\n", portno);
-#else
-            logd(TAG, "COM:%s disconnected\n", portno.c_str());
-#endif
     }
+#ifdef _WIN32
+    log.d(TAG, "COM:%d disconnected\n", portno);
+#else
+    log.d(TAG, "%s disconnected\n", portno.c_str());
+#endif
 
     sensorStatus = STATUS_DISCONNECTED;
     return true;
 }
 
+int IG1::getReconnectCount()
+{
+    return reconnectCount;
+}
 
 void IG1::setConnectionInterface(int interface)
 {
@@ -1331,23 +1336,23 @@ int IG1::getSensorDataQueueSize()
 
 int IG1::getFilePages() 
 { 
-	return firmwarePages; 
+    return firmwarePages; 
 };
 
 bool IG1::getIsUpdatingStatus() 
 { 
-	return sensorUpdating; 
+    return sensorUpdating; 
 };
 
 // Error 
 std::string IG1::getLastErrMsg() 
 { 
-	return errMsg; 
+    return errMsg; 
 };
 
-void IG1::setVerbose(bool b)
+void IG1::setVerbose(int level)
 {
-	verboseOutput = true;
+    log.setVerbose(level);
 }
 
 /////////////////////////////////////////////
@@ -1357,7 +1362,7 @@ bool IG1::startDataSaving()
 {
     if (isDataSaving)
     {
-        logd(TAG, "Data save action running\n");
+        log.d(TAG, "Data save action running\n");
         return false;
     }
     isDataSaving = true;
@@ -1423,40 +1428,42 @@ void IG1::clearSensorDataQueue()
 
 void IG1::updateData()
 {
-    int reconnectCount = 0;
+    reconnectCount = 0;
 
+    // Starting point for each new connection/reconnection
     do
-    {
+    {   
+        /////////////////////////////////////////////////
+        // Reset all connection related parameters
+        /////////////////////////////////////////////////
         init();
-        isStopThread = false;
 
-        transmitDataRegisterStatus = TDR_INVALID;
-        sensorStatus = STATUS_CONNECTING;
-
-        // Connect sensor
+        /////////////////////////////////////////////////
+        // Establish serial connection to sensor
+        /////////////////////////////////////////////////
         if (connectionMode == Serial::MODE_VCP)
         {
             sp.setMode(Serial::MODE_VCP);
             if (sp.open(portno, baudrate))
             {
-                if (verboseOutput)
+                sensorStatus = STATUS_CONNECTING;
 #ifdef _WIN32
-                    logd(TAG, "COM:%d connection established\n", portno);
+                log.d(TAG, "COM:%d connection established\n", portno);
 #else
-                    logd(TAG, "%s connection established\n", sp.getPortNo().c_str());
+                log.d(TAG, "%s connection established\n", sp.getPortNo().c_str());
 #endif
             }
             else
             {
-                stringstream ss;
-                errMsg = ss.str();
-#ifdef _WIN32
-                logd(TAG, "Error connecting to port: %d @ %d\n", portno, baudrate);
-#else
-                logd(TAG, "Error connecting to port: %s @ %d\n", portno.c_str(), baudrate);
-#endif 
-                errMsg = ss.str();
                 sensorStatus = STATUS_CONNECTION_ERROR;
+                stringstream ss;
+#ifdef _WIN32
+                ss << "Error connecting to COM: " << portno << "@" << baudrate;
+#else
+                ss << "Error connecting to: " << portno << "@" << baudrate;
+#endif
+                errMsg = ss.str();
+                log.e(TAG, "%s\n", errMsg.c_str());
             }
         }
         else if (connectionMode == Serial::MODE_USB_EXPRESS)
@@ -1464,32 +1471,36 @@ void IG1::updateData()
             sp.setMode(Serial::MODE_USB_EXPRESS);
             if (sp.open(sensorId, baudrate))
             {
-                if (verboseOutput)
-                    logd(TAG, "Sensor:%s connection established\n", sensorId.c_str());
+                sensorStatus = STATUS_CONNECTING;
+                log.d(TAG, "%s connection established\n", sensorId.c_str());
             }
             else
             {
+                sensorStatus = STATUS_CONNECTION_ERROR;
                 stringstream ss;
                 ss << "Error connecting to sensor: " << sensorId << endl;
                 errMsg = ss.str();
-                sensorStatus = STATUS_CONNECTION_ERROR;
+                log.e(TAG, "%s\n", errMsg.c_str());
             }
         }
         else 
         {
             sensorStatus = STATUS_CONNECTION_ERROR;
-            cout << "Unknown connection mode" << endl;
+            log.e(TAG, "Unknown connection mode");
         }
 
+
+        /////////////////////////////////////////////////
+        //  Sensor communication
+        /////////////////////////////////////////////////
         if (sensorStatus != STATUS_CONNECTION_ERROR)
         {
             // Initialize 
-            reconnectCount = 0;
-            int count = 0;
             int readResult = 0;
-            packet.rxState = PACKET_START;
             int TDRRetryCount = 0;
-            clearSensorDataQueue();
+
+            reconnectCount = 0;
+
             incomingDataRate = 0;
             isDataSaving = false;
 
@@ -1508,7 +1519,7 @@ void IG1::updateData()
                 // Process command queue
                 // Send command
                 mLockCommandQueue.lock();
-                if (!commandQueue.empty() && mmCommandTimer.measure() > 100000)
+                if (!commandQueue.empty() && mmCommandTimer.measure() > TIMEOUT_COMMAND_TIMER)
                 {
                     if (commandQueue.front().processed)
                         commandQueue.pop();
@@ -1534,8 +1545,8 @@ void IG1::updateData()
                 if (transmitDataRegisterStatus == TDR_INVALID) 
                 {
                     sensorStatus = STATUS_CONNECTING;
-                    if (verboseOutput)
-	                    logd(TAG, "Send get transmit data\n");
+                    
+                    log.d(TAG, "Send get transmit data\n");
                     transmitDataRegisterStatus = TDR_UPDATING;
                     mmTransmitDataRegisterStatus.reset();
                     commandGetSensorInfo();
@@ -1543,12 +1554,12 @@ void IG1::updateData()
 
                 // Resend get transmit data if no response after 5 sec
                 if (transmitDataRegisterStatus == TDR_UPDATING && 
-                    mmTransmitDataRegisterStatus.measure() > 5000000)
+                    mmTransmitDataRegisterStatus.measure() > TIMEOUT_TDR_STATUS)
                 {
                     sensorStatus = STATUS_CONNECTING;
                     TDRRetryCount++;
-                    if (verboseOutput)
-                    	logd(TAG, "Resend get transmit data: %d\n", TDRRetryCount);
+                    
+                    log.d(TAG, "Resend get transmit data: %d\n", TDRRetryCount);
                     transmitDataRegisterStatus = TDR_UPDATING;
                     mmTransmitDataRegisterStatus.reset();
                     commandGetSensorInfo();
@@ -1568,8 +1579,6 @@ void IG1::updateData()
                     addSensorResponseToQueue(ss.str());
                     sensorStatus = STATUS_CONNECTION_ERROR;
                 }
-
-
 
                 // Read data
                 readResult = sp.readData(incomingData, INCOMING_DATA_MAX_LENGTH);
@@ -1592,7 +1601,7 @@ void IG1::updateData()
                     if (nackReceived)
                     {
                         errMsg = "Error updating sensor\n";
-                        logd(TAG, errMsg.c_str());
+                        log.e(TAG, errMsg.c_str());
                         nackReceived = false;
                         sensorUpdating = false;
                     }
@@ -1619,8 +1628,8 @@ void IG1::updateData()
                                     */
 
                                     sendCommand(updateCommand, checksumCmd.dataLength, checksumCmd.data.c);
-                                    logd(TAG, "Sensor firmware packet: %d\n", firmwarePages);
-                                    logd(TAG, "Sensor firmware checksum: %d\n", fileCheckSum);
+                                    log.d(TAG, "Sensor firmware packet: %d\n", firmwarePages);
+                                    log.d(TAG, "Sensor firmware checksum: %d\n", fileCheckSum);
                                     firmwarePages--;
                                 }
                                 else
@@ -1648,14 +1657,14 @@ void IG1::updateData()
                                     //addCommandQueue(packetCommand);
 
                                     sendCommand(updateCommand, firmwarePageSize, cBuffer);
-                                    logd(TAG, "Sensor firmware packet: %d\n", firmwarePages);
+                                    log.d(TAG, "Sensor firmware packet: %d\n", firmwarePages);
                                     firmwarePages--;
                                 }
                             }
                             else
                             {
                                 errMsg = "Error updating sensor: error reading firmware/iap file\n";
-                                logd(TAG, errMsg.c_str());
+                                log.e(TAG, errMsg.c_str());
                                 ackReceived = false;
                                 sensorUpdating = false;
                                 if (ifs.is_open())
@@ -1665,11 +1674,11 @@ void IG1::updateData()
                         else
                         {
                             if (firmwarePages < 0) {
-                                logd(TAG, "File checksum done\n");
+                                log.d(TAG, "File checksum done\n");
                                 sensorUpdating = false;
                             }
                             if (firmwarePages == 0) {
-                                logd(TAG, "Update file done\n");
+                                log.d(TAG, "Update file done\n");
                                 ifs.close();
                                 firmwarePages--;
                             }
@@ -1677,7 +1686,7 @@ void IG1::updateData()
                     }
 
                     else {
-                        if (mmUpdating.measure() > timeoutThreshold - 2000000) // 3 secs no data
+                        if (mmUpdating.measure() > timeoutThreshold - TIMEOUT_FIRMWARE_UPDATE) // 3 secs no data
                         {
                             errMsg = "Updating timeout";
                             sensorUpdating = false;
@@ -1694,7 +1703,7 @@ void IG1::updateData()
                 if (mmDataIdle.measure() > timeoutThreshold) // 5 secs no data
                 {
                     errMsg = "Data timeout";
-                    logd(TAG, "%s\n", errMsg.c_str());
+                    log.d(TAG, "%s\n", errMsg.c_str());
                     sensorStatus = STATUS_DATA_TIMEOUT;
                     break;
                 }
@@ -1719,24 +1728,45 @@ void IG1::updateData()
         {
             sp.close();
         }
-        if (verboseOutput)
+        
+        if (sensorStatus == STATUS_DATA_TIMEOUT)
+        {
 #ifdef _WIN32
-            logd(TAG, "COM:%d disconnected\n", portno);
+
+            if (connectionMode == Serial::MODE_VCP)
+                log.e(TAG, "COM:%d Data timeout\n", portno);
+            else if (connectionMode = Serial::MODE_USBEXPRESS)
+                log.e(TAG, "%s Data timeout\n", sensorName.c_str());
 #else
-            logd(TAG, "Sensor:%s disconnected\n", portno.c_str());
+            log.d(TAG, "%s Data timeout\n", portno.c_str());
 #endif
-        // deinit
-        sensorStatus = STATUS_CONNECTION_ERROR;
+        }
+        else if (sensorStatus == STATUS_CONNECTION_ERROR)
+        {
+#ifdef _WIN32
+            if (connectionMode == Serial::MODE_VCP)
+                log.e(TAG, "COM:%d Connection error\n", portno);
+            else if (connectionMode = Serial::MODE_USBEXPRESS)
+                log.e(TAG, "%s Connection error\n", sensorName.c_str());
+#else
+            log.d(TAG, "%s Connection error\n", portno.c_str());
+#endif
+        }
+        else 
+        {
+            log.d(TAG, "Update data thread stopped\n");
+        }
+
 
         if (autoReconnect && !isStopThread)
         {
             reconnectCount++;
-            if (verboseOutput)
-                logd(TAG, "Reconnecting %d\n",  reconnectCount);
+            log.d(TAG, "Reconnecting %d\n",  reconnectCount);
             this_thread::sleep_for(chrono::milliseconds(1000));
         }
     } while (autoReconnect && !isStopThread);
 
+    disconnect();
     //t = NULL;
 }
 

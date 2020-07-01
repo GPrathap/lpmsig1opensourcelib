@@ -5,6 +5,7 @@
 #include "windows.h"
 #endif
 #include "SensorDataI.h"
+#include "LpLog.h"
 
 //
 #define CONNECTION_INTERFACE_232 0
@@ -17,6 +18,7 @@
 #define STATUS_CONNECTION_ERROR 3
 #define STATUS_DATA_TIMEOUT     4
 #define STATUS_UPDATING         5
+
 
 class IG1I
 {
@@ -46,7 +48,7 @@ public:
 #endif
 
     virtual bool disconnect() = 0;
-
+    virtual int getReconnectCount() = 0;
     /*
     CONNECTION_INTERFACE_232 0
     CONNECTION_INTERFACE_485 1
@@ -690,7 +692,7 @@ public:
     // Error 
     virtual std::string getLastErrMsg() = 0;
 
-    virtual void setVerbose(bool b) = 0;
+    virtual void setVerbose(int verboseLevel) = 0;
 };
 
 #ifdef _WIN32

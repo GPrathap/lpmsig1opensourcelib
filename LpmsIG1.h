@@ -55,7 +55,12 @@ struct LPPacket
 
     LPPacket()
     {
-        rxState = 0;
+        reset();
+    }
+
+    void reset()
+    {
+        rxState = PACKET_START;
         address = 0;
         length = 0;
         function = 0;
@@ -66,20 +71,31 @@ struct LPPacket
 
 };
 
+enum {
+    CONNECTION_STATE_DISCONNECTED,
+    CONNECTION_STATE_WAIT_FOR_TDR,
+    CONNECTION_STATE_CONNECTED
+};
+
 #define BYTE_START              0x3A
 #define BYTE_END0               0x0D
 #define BYTE_END1               0x0A
 
-#define TDR_INVALID                                 0
-#define TDR_VALID                                   1
-#define TDR_UPDATING                                2
-#define TDR_ERROR                                   3
+#define TDR_INVALID                 0
+#define TDR_VALID                   1
+#define TDR_UPDATING                2
+#define TDR_ERROR                   3
 
 // Others
 #define SAVE_DATA_LIMIT             720000 //2 hours at 100hz  
 #define SENSOR_DATA_QUEUE_SIZE      10
 #define SENSOR_RESPONSE_QUEUE_SIZE  50
 #define FIRMWARE_PACKET_LENGTH      256
+
+#define TIMEOUT_COMMAND_TIMER       100000      // us
+#define TIMEOUT_TDR_STATUS          5000000     // 5secs
+#define TIMEOUT_FIRMWARE_UPDATE     2000000
+#define TIMEOUT_IDLE                5000000     // 5secs
 
 // sensor response logic
 #define WAIT_IGNORE                     0
@@ -162,10 +178,13 @@ public:
 #endif
 
     bool disconnect();
+    int getReconnectCount();
+
     void setConnectionMode(int mode);
     void setConnectionInterface(int interface);
     void setControlGPIOForRs485(int gpio);
     void setControlGPIOToggleWaitMs(unsigned int ms);
+
 
     /////////////////////////////////////////////
     // Commands:
@@ -188,50 +207,50 @@ public:
     */
     void commandGotoStreamingMode(void);
 
-	/*
-	Function:
-	- send command to sensor to get sensor ID
-	Parameters: none
-	Returns: int32
-	*/
-	void commandGetSensorID(void);
+    /*
+    Function:
+    - send command to sensor to get sensor ID
+    Parameters: none
+    Returns: int32
+    */
+    void commandGetSensorID(void);
 
-	/*
-	Function:
-	- send command to sensor to set sensor ID
-	Parameters: int32
-	Returns: none
-	*/
-	void commandSetSensorID(uint32_t id);
+    /*
+    Function:
+    - send command to sensor to set sensor ID
+    Parameters: int32
+    Returns: none
+    */
+    void commandSetSensorID(uint32_t id);
 
-	/*
-	Function:
-	- send command to sensor to get sensor Frenquency
-	- hasInfo() will return true once sensor info is available
-	Parameters: none
-	Returns: none
-	*/
-	void commandGetSensorFrequency(void);
+    /*
+    Function:
+    - send command to sensor to get sensor Frenquency
+    - hasInfo() will return true once sensor info is available
+    Parameters: none
+    Returns: none
+    */
+    void commandGetSensorFrequency(void);
 
-	/*
-	Function:
-	- send command to sensor to set sensor Frenquency
-	Parameters: int32
-	Returns: none
-	*/
-	void commandSetSensorFrequency(uint32_t freq);
+    /*
+    Function:
+    - send command to sensor to set sensor Frenquency
+    Parameters: int32
+    Returns: none
+    */
+    void commandSetSensorFrequency(uint32_t freq);
 
 
-	void commandGetSensorGyroRange(void);
-	void commandSetSensorGyroRange(uint32_t range);
+    void commandGetSensorGyroRange(void);
+    void commandSetSensorGyroRange(uint32_t range);
 
     void commandStartGyroCalibration(void);
 
-	void commandGetSensorAccRange(void);
-	void commandSetSensorAccRange(uint32_t range);
+    void commandGetSensorAccRange(void);
+    void commandSetSensorAccRange(uint32_t range);
 
-	void commandGetSensorMagRange(void);
-	void commandSetSensorMagRange(uint32_t range);
+    void commandGetSensorMagRange(void);
+    void commandSetSensorMagRange(uint32_t range);
 
     void commandGetSensorUseRadianOutput(void);
     void commandSetSensorUseRadianOutput(bool b);
@@ -305,7 +324,7 @@ public:
     // Uart
     void commandSetUartBaudRate(uint32_t data);
     void commandGetUartBaudRate(void);
-	
+    
     void commandSetUartDataFormat(uint32_t data);
     void commandGetUartDataFormat(void);
 
@@ -613,8 +632,7 @@ public:
 
     // Error 
     std::string getLastErrMsg();
-
-    void setVerbose(bool b);
+    void setVerbose(int level);
 
     ///////////////////////////////////////////
     //Data saving
@@ -649,8 +667,11 @@ private:
     int gpioGetValue(unsigned int gpio, unsigned int *value);
 
 private:
+    // General settings
+    bool autoReconnect;
+    int reconnectCount;
 
-    // serial uart
+    // Serial settings
     Serial sp;
 #ifdef _WIN32
     int portno;
@@ -662,7 +683,7 @@ private:
     int connectionMode;         // VCP / USB Xpress
     int connectionInterface;    // 232-TTL/485
     
-    // RS485 Settings
+    // RS485 settings
     int ctrlGpio;
     unsigned int ctrlGpioToggleWaitMs;
     
@@ -672,9 +693,8 @@ private:
     // Internal thread
     std::thread *t;
     bool isStopThread;
-    bool autoReconnect;
-    bool verboseOutput;
-    MicroMeasure mmDataFreq;	
+    int connectionState;    
+    MicroMeasure mmDataFreq;    
     MicroMeasure mmDataIdle;
     MicroMeasure mmUpdating;
 
@@ -686,29 +706,28 @@ private:
 
     // Stats
     float incomingDataRate;
-    unsigned int lastTimestamp;
 
-    // command queue
+    // Command queue
     std::mutex mLockCommandQueue;
     std::queue<IG1Command> commandQueue; //TODO use custom object to accomodate command data
     MicroMeasure mmCommandTimer;
     long long lastSendCommandTime;
 
-    // response
+    // Rresponse
     std::mutex mLockSensorResponseQueue;
     std::queue<std::string> sensorResponseQueue;
 
-    // info
+    // Info
     bool hasNewInfo;
     IG1Info sensorInfo;
 
-    // settings
+    // Sensor settings
     bool hasNewSettings;
     IG1AdvancedSettings sensorSettings;
     int transmitDataRegisterStatus;   // TDR_INVALID: TDR_VALID : TDR_UPDATING
     MicroMeasure mmTransmitDataRegisterStatus;
 
-    // imu data
+    // Imu data
     IG1ImuData latestImuData;
     std::mutex mLockImuDataQueue;
     std::queue<IG1ImuData> imuDataQueue;
@@ -719,7 +738,7 @@ private:
     std::mutex mLockGpsDataQueue;
     std::queue<IG1GpsData> gpsDataQueue;
     
-    // firmware update
+    // Firmware update
     std::ifstream ifs;
     bool sensorUpdating;
     bool ackReceived;
@@ -732,7 +751,7 @@ private:
     uint16_t updateCommand;
     unsigned char cBuffer[1024];
 
-    // Save data
+    // Data saving
     // Imu
     bool isDataSaving;
     std::mutex mLockSavedImuDataQueue;
@@ -747,7 +766,7 @@ private:
 
     // debug
     MicroMeasure mmDebug;
-    
+    LpLog& log = LpLog::getInstance();
 };
 
 

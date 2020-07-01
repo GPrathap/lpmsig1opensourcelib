@@ -30,13 +30,13 @@ bool Serial::open(std::string portno, int baudrate)
     fd = ::open (portno.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
     {
-        logd(TAG, "Error %d: Error opening %s: %s\n", errno,  portno.c_str(), strerror (errno));
+        log.e(TAG, "Error opening %s: Err %d %s\n", portno.c_str(), errno, strerror (errno));
         return false;
     }
 
-    if (set_interface_attribs (fd, baudrate, 0) == -1) {
-
-        logd(TAG, "Error configuring serial attributes");
+    if (set_interface_attribs (fd, baudrate, 0) == -1)
+    {
+        log.e(TAG, "Error configuring serial attributes");
         return false;
     } 
 
@@ -71,7 +71,7 @@ int Serial::readData(unsigned char *buffer, unsigned int nbChar)
     ioctl(fd, FIONREAD, &bytes_avail);
 
     if (bytes_avail > INCOMING_DATA_MAX_LENGTH) {
-        logd(TAG, "Warning: Buffer overflow\n");
+        log.d(TAG, "Warning: Buffer overflow: %d\n", bytes_avail);
         bytes_avail = INCOMING_DATA_MAX_LENGTH;
     } else if (bytes_avail > nbChar)
         bytes_avail = nbChar; 
@@ -95,7 +95,7 @@ bool Serial::writeData(unsigned char *buffer, unsigned int nbChar)
 {
     if (!isConnected())
     {
-        logd(TAG, "Error: dongle not connected\n");
+        log.e(TAG, "Error: dongle not connected\n");
         return false;
     }
     int ret;

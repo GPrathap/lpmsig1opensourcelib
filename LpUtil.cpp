@@ -1,7 +1,7 @@
 #include "LpUtil.h"
 #include <iomanip>
 
-
+/*
 void logd(std::string tag, const char* str, ...)
 {
     va_list a_list;
@@ -11,6 +11,7 @@ void logd(std::string tag, const char* str, ...)
     vprintf(str, a_list);
     va_end(a_list);
 } 
+*/
 
 const std::string currentDateTime(const char* format)
 {

@@ -99,6 +99,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         LpmsIG1Registers.h
         SensorDataI.h
         LpmsIG1I.h
+        LpLog.h
     )
 endif()
 
@@ -113,6 +114,7 @@ set(headers
     LpmsIG1I.h
     LpmsIG1Registers.h
     LpMatrix.h
+    LpLog.h
 )
 
 

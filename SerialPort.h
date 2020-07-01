@@ -23,6 +23,7 @@
 #include <iterator> 
 #include <map> 
 #endif
+#include "LpLog.h"
 
 
 const static int INCOMING_DATA_MAX_LENGTH = 2048;
@@ -115,6 +116,7 @@ public:
     void createUsbDeviceMap();
     
 #endif
+    LpLog& log = LpLog::getInstance();
 
 };
 

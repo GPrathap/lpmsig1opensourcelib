@@ -15,7 +15,6 @@
 #include <cstdio>
 #include <sstream>
 #include <iomanip>
-#include "util.h"
 
 #include "SerialPort.h"
 #include "MicroMeasure.h"
@@ -609,11 +608,13 @@ public:
     void setSensorDataQueueSize(unsigned int size);
     int getSensorDataQueueSize(void);
 
-    int getFilePages() { return firmwarePages; };
-    bool getIsUpdatingStatus() { return sensorUpdating; };
+    int getFilePages();
+    bool getIsUpdatingStatus();
 
     // Error 
-    std::string getLastErrMsg() { return errMsg; };
+    std::string getLastErrMsg();
+
+    void setVerbose(bool b);
 
     ///////////////////////////////////////////
     //Data saving
@@ -670,10 +671,9 @@ private:
 
     // Internal thread
     std::thread *t;
-    bool isThreadRunning;
     bool isStopThread;
     bool autoReconnect;
-    bool debugOutput;
+    bool verboseOutput;
     MicroMeasure mmDataFreq;	
     MicroMeasure mmDataIdle;
     MicroMeasure mmUpdating;

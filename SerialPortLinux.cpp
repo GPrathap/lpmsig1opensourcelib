@@ -1,12 +1,12 @@
 
 #include "SerialPort.h"
+#include "LpUtil.h"
 using namespace std;
 
 Serial::Serial():
     portNo(""),
     connected(false)
 {
-	usbDeviceMap = createUsbDeviceMap();
 }
 
 Serial::~Serial()
@@ -20,6 +20,7 @@ bool Serial::open(std::string portno, int baudrate)
     if (isConnected())
         close();
 
+    createUsbDeviceMap();
     map<string, string>::iterator iter = usbDeviceMap.find(portno);
     if (iter != usbDeviceMap.end())
     {
@@ -29,15 +30,13 @@ bool Serial::open(std::string portno, int baudrate)
     fd = ::open (portno.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
     if (fd < 0)
     {
-        //logd(TAG, "Error %d: Error opening %s: %s\n", errno,  portno.c_str(), strerror (errno));
-        std::cout << "Error opening " << errno << std::endl;
+        logd(TAG, "Error %d: Error opening %s: %s\n", errno,  portno.c_str(), strerror (errno));
         return false;
     }
 
     if (set_interface_attribs (fd, baudrate, 0) == -1) {
 
-        //logd(TAG, "Error configuring serial attributes");
-        std::cout << "Error configuring serial attributes" << std::endl;
+        logd(TAG, "Error configuring serial attributes");
         return false;
     } 
 
@@ -72,8 +71,7 @@ int Serial::readData(unsigned char *buffer, unsigned int nbChar)
     ioctl(fd, FIONREAD, &bytes_avail);
 
     if (bytes_avail > INCOMING_DATA_MAX_LENGTH) {
-        //logd(TAG, "Buffer overflow!\n");
-        std::cout << "Buffer overflow!\n";
+        logd(TAG, "Warning: Buffer overflow\n");
         bytes_avail = INCOMING_DATA_MAX_LENGTH;
     } else if (bytes_avail > nbChar)
         bytes_avail = nbChar; 
@@ -97,7 +95,7 @@ bool Serial::writeData(unsigned char *buffer, unsigned int nbChar)
 {
     if (!isConnected())
     {
-        std::cout << "dongle not connected\n";
+        logd(TAG, "Error: dongle not connected\n");
         return false;
     }
     int ret;
@@ -155,21 +153,19 @@ int Serial::set_interface_attribs (int fd, int speed, int parity)
     return 0;
 }
 
-map<string, string> Serial::createUsbDeviceMap()
+void Serial::createUsbDeviceMap()
 {
-    map<string, string> map;
- 
     struct udev *udev;
     struct udev_device *dev;
     struct udev_enumerate *enumerate;
     struct udev_list_entry *list, *node;
     const char *path;
 
+    usbDeviceMap.clear();
     udev = udev_new();
     if (!udev) 
     {
         printf("can not create udev");
-        return map;
     }
 
     enumerate = udev_enumerate_new(udev);
@@ -186,7 +182,7 @@ map<string, string> Serial::createUsbDeviceMap()
         {
             string serialID(udev_device_get_property_value(dev, "ID_SERIAL_SHORT"));
             string devName(udev_device_get_property_value(dev, "DEVNAME"));
-            map.insert(pair<string, string>(serialID, devName));
+            usbDeviceMap.insert(pair<string, string>(serialID, devName));
         }
         udev_device_unref(dev);
     }

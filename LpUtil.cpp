@@ -1,4 +1,4 @@
-#include "util.h"
+#include "LpUtil.h"
 #include <iomanip>
 
 
@@ -7,10 +7,10 @@ void logd(std::string tag, const char* str, ...)
     va_list a_list;
     va_start(a_list, str);
     if (!tag.empty())
-        printf("[%s] ", tag.c_str());
+        printf("[ %-8s] ", tag.c_str());
     vprintf(str, a_list);
     va_end(a_list);
-}
+} 
 
 const std::string currentDateTime(const char* format)
 {

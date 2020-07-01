@@ -36,7 +36,7 @@
 #include <cstdio>
 #include "LpMatrix.h"
 #include "LpmsIG1Registers.h"
-#include "util.h"
+#include "LpUtil.h"
 
 #include "SensorDataI.h"
 

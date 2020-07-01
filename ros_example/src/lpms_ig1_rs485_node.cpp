@@ -12,11 +12,6 @@
 #include "lpsensor/SensorDataI.h"
 #include "lpsensor/LpmsIG1Registers.h"
 
-//! Manages connection with the sensor, publishes data
-/*!
-  \TODO: Make noncopyable!
- */
-
 struct IG1Command
 {
     short command;
@@ -73,7 +68,7 @@ public:
 
         // Create LpmsIG1 object 
         sensor1 = IG1Factory();
-        sensor1->setConnectionInterface(COMMUNICATION_INTERFACE_485);
+        sensor1->setConnectionInterface(CONNECTION_INTERFACE_485);
         sensor1->setControlGPIOForRs485(rs485ControlPin);
         sensor1->setControlGPIOToggleWaitMs(rs485ControlPinToggleWaitMs); 
 
@@ -97,12 +92,10 @@ public:
          // Connects to sensor
         if (!sensor1->connect(comportNo, baudrate))
         {
-            //logd(TAG, "Error connecting to sensor\n");
             ROS_ERROR("Error connecting to sensor\n");
             sensor1->release();
             ros::Duration(3).sleep(); // sleep 3 s
         }
-
 
         do
         {
@@ -208,7 +201,6 @@ public:
     ///////////////////////////////////////////////////
     // Service Callbacks
     ///////////////////////////////////////////////////
-
     bool setAutocalibration (std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
     {
         ROS_INFO("set_autocalibration");
@@ -222,9 +214,7 @@ public:
         sensor1->getSettings(settings);
 
         cmdSetEnableAutocalibration(req.data);
-
         ros::Duration(0.2).sleep();
-
         cmdGetEnableAutocalibration();
         ros::Duration(0.1).sleep();
 
@@ -248,7 +238,6 @@ public:
         }
         ROS_INFO("set_autocalibration done");
 
-
         // Get settings
         sensor1->getSettings(settings);
 
@@ -271,7 +260,6 @@ public:
         return res.success;
     }
 
-    
     // reset heading
     bool resetHeading (std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
@@ -280,6 +268,7 @@ public:
         ros::Duration(0.1).sleep();
         cmdGotoCommandMode();
         ros::Duration(0.1).sleep();
+        
         cmdResetHeading();
 
         res.success = true;
@@ -290,12 +279,13 @@ public:
         return true;
     }
 
-
     bool calibrateGyroscope (std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
         ROS_INFO("calibrate_gyroscope: Please make sure the sensor is stationary for 4 seconds");
+        
         cmdGotoCommandMode();
         ros::Duration(0.1).sleep();
+        
         cmdCalibrateGyroscope();
         ros::Duration(4).sleep();
         res.success = true;
@@ -309,6 +299,7 @@ public:
     {
         cmdGotoCommandMode();
         ros::Duration(0.1).sleep();
+        
         cmdGetImuData();
         res.success = true;
         res.message = "[Success] Get imu data";
@@ -327,6 +318,7 @@ public:
     {
         cmdGotoCommandMode();
         ros::Duration(0.1).sleep();
+        
         cmdGotoCommandMode();
         res.success = true;
         res.message = "[Success] Set command mode";

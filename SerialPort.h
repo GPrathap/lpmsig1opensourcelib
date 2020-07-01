@@ -29,6 +29,7 @@ const static int INCOMING_DATA_MAX_LENGTH = 2048;
 
 class Serial
 {
+    const std::string TAG = "SERIAL";
 public:
     enum  {
         BAUDRATE_4800=4800,
@@ -111,7 +112,7 @@ public:
 
 #ifdef __linux__ 
     int set_interface_attribs (int fd, int speed, int parity);
-    std::map<std::string, std::string> createUsbDeviceMap();
+    void createUsbDeviceMap();
     
 #endif
 

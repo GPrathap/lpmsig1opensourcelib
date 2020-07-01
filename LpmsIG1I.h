@@ -7,8 +7,8 @@
 #include "SensorDataI.h"
 
 //
-#define COMMUNICATION_INTERFACE_232 0
-#define COMMUNICATION_INTERFACE_485 1
+#define CONNECTION_INTERFACE_232 0
+#define CONNECTION_INTERFACE_485 1
 
 // Sensor status
 #define STATUS_DISCONNECTED     0
@@ -47,6 +47,10 @@ public:
 
     virtual bool disconnect() = 0;
 
+    /*
+    CONNECTION_INTERFACE_232 0
+    CONNECTION_INTERFACE_485 1
+    */
     virtual void setConnectionInterface(int interface) = 0;
 
     virtual void setControlGPIOForRs485(int gpio) = 0;
@@ -685,6 +689,8 @@ public:
 
     // Error 
     virtual std::string getLastErrMsg() = 0;
+
+    virtual void setVerbose(bool b) = 0;
 };
 
 #ifdef _WIN32

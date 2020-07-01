@@ -82,7 +82,7 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
         SerialPort.cpp
         LpmsIG1.cpp
         LpMatrix.c
-        util.cpp
+        LpUtil.cpp
         version.rc
     )
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -91,7 +91,7 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         SerialPortLinux.cpp
         LpmsIG1.cpp
         LpMatrix.c
-        util.cpp
+        LpUtil.cpp
         version.rc
     )
     set(headers_linux_install
@@ -108,7 +108,7 @@ set(headers
     SerialPort.h
     SensorData.h
     SensorDataI.h
-    util.h
+    LpUtil.h
     LpmsIG1.h
     LpmsIG1I.h
     LpmsIG1Registers.h

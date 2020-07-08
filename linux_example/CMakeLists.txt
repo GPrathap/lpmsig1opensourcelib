@@ -46,5 +46,5 @@ add_executable(LpmsIG1_SimpleExample ${LpmsIG1_SimpleExample_SRCS} ${headers})
 target_link_libraries(LpmsIG1_SimpleExample LpmsIG1_OpenSourceLib rt pthread udev)
 
 # LpmsIG1_RS485 Example
-add_executable(LpmsIG1_RS485Example ${LpmsIG1_SimpleExample_SRCS} ${headers})
+add_executable(LpmsIG1_RS485Example ${LpmsIG1_RS485Example_SRCS} ${headers})
 target_link_libraries(LpmsIG1_RS485Example LpmsIG1_OpenSourceLib rt pthread udev)

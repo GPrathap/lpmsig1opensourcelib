@@ -7,17 +7,21 @@
 #include "SensorDataI.h"
 #include "LpLog.h"
 
-//
-#define CONNECTION_INTERFACE_232 0
-#define CONNECTION_INTERFACE_485 1
+// Note: To be deprecated
+#define COMMUNICATION_INTERFACE_232     0
+#define COMMUNICATION_INTERFACE_485     1
+
+// Connection Interface
+#define CONNECTION_INTERFACE_RS232_USB  0
+#define CONNECTION_INTERFACE_RS485      1
 
 // Sensor status
-#define STATUS_DISCONNECTED     0
-#define STATUS_CONNECTING       1
-#define STATUS_CONNECTED        2
-#define STATUS_CONNECTION_ERROR 3
-#define STATUS_DATA_TIMEOUT     4
-#define STATUS_UPDATING         5
+#define STATUS_DISCONNECTED             0
+#define STATUS_CONNECTING               1
+#define STATUS_CONNECTED                2
+#define STATUS_CONNECTION_ERROR         3
+#define STATUS_DATA_TIMEOUT             4
+#define STATUS_UPDATING                 5
 
 
 class IG1I
@@ -41,21 +45,80 @@ public:
 #endif
 
 #ifdef _WIN32
+    /*
+    Function: Connect to sensor
+    Parameters:
+        - _portno: In windows, this the number attached to COM port. eg 3 for COM3
+        - baudrate: serial baudrate
+    Returns: sensor status
+        - STATUS_DISCONNECTED    
+        - STATUS_CONNECTING      
+        - STATUS_CONNECTED       
+        - STATUS_CONNECTION_ERROR
+        - STATUS_DATA_TIMEOUT    
+        - STATUS_UPDATING        
+    */
     virtual int connect(int _portno, int _baudrate) = 0;
+
+    /*
+    Function: Connect to sensor
+    Parameters:
+        - sensorName: sensor ID
+        - baudrate: serial baudrate
+    Returns: sensor status
+        - STATUS_DISCONNECTED    
+        - STATUS_CONNECTING      
+        - STATUS_CONNECTED       
+        - STATUS_CONNECTION_ERROR
+        - STATUS_DATA_TIMEOUT    
+        - STATUS_UPDATING        
+    */
     virtual int connect(std::string sensorName, int _baudrate) = 0;
 #else
+
+    /*
+    Function: Connect to sensor
+    Parameters:
+        - _portno: In linux, this value can be serial mount point /dev/ttyXXX
+                   or sensor ID
+        - baudrate: serial baudrate
+    Returns: sensor status
+        - STATUS_DISCONNECTED    
+        - STATUS_CONNECTING      
+        - STATUS_CONNECTED       
+        - STATUS_CONNECTION_ERROR
+        - STATUS_DATA_TIMEOUT    
+        - STATUS_UPDATING        
+    */
     virtual int connect(std::string _portno, int _baudrate) = 0;
 #endif
 
     virtual bool disconnect() = 0;
     virtual int getReconnectCount() = 0;
     /*
-    CONNECTION_INTERFACE_232 0
-    CONNECTION_INTERFACE_485 1
+    Function: Set connection interface
+    Parameters: 
+        - interface:
+            CONNECTION_INTERFACE_RS232_USB  for USB/RS232 connection
+            CONNECTION_INTERFACE_RS485      for RS485 connection
     */
     virtual void setConnectionInterface(int interface) = 0;
 
+    /*
+    Function: Set gpio control pin
+    Parameters: 
+        - interface:
+            CONNECTION_INTERFACE_RS232_USB  for USB/RS232 connection
+            CONNECTION_INTERFACE_RS485      for RS485 connection
+    */
     virtual void setControlGPIOForRs485(int gpio) = 0;
+
+    /*
+    Function: Set time to wait before toggling io pin during host TX transfer. 
+    Only applies to RS485 connection 
+    Parameters:  wait time in ms
+    Return: none
+    */
     virtual void setControlGPIOToggleWaitMs(unsigned int ms) = 0;
 
 
@@ -417,13 +480,22 @@ public:
     /////////////////////////////////////////////
     // General
     /*
-    Function: enable auto reconnection
+    Function: set auto reconnection status
     Parameters:
     - true: enable
     - false: disable
     Returns: none
     */
-    virtual void enableAutoReconnect(bool b) = 0;
+    virtual void setAutoReconnectStatus(bool b) = 0;
+
+    /*
+    Function: get enable auto reconnection status
+    Parameters: none
+    Returns: 
+    - true: enable
+    - false: disable
+    */
+    virtual bool getAutoReconnectStatus(void) = 0;
 
     /*
     Function: get status of sensor
@@ -692,6 +764,14 @@ public:
     // Error 
     virtual std::string getLastErrMsg() = 0;
 
+    /*
+    Function: Set library verbosity output
+    Parameters: 
+        - VERBOSE_NONE
+        - VERBOSE_INFO
+        - VERBOSE_DEBUG
+    Returns: void
+    */
     virtual void setVerbose(int verboseLevel) = 0;
 };
 

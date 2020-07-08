@@ -73,7 +73,11 @@ struct LPPacket
 
 enum {
     CONNECTION_STATE_DISCONNECTED,
-    CONNECTION_STATE_WAIT_FOR_TDR,
+    CONNECTION_STATE_GET_SENSOR_INFO,
+    CONNECTION_STATE_WAITING_SENSOR_INFO,
+    CONNECTION_STATE_VALID_SENSOR_INFO,
+    CONNECTION_STATE_TDR_ERROR,
+    CONNECTION_STATE_FIRMWARE_UPDATE,
     CONNECTION_STATE_CONNECTED
 };
 
@@ -87,15 +91,16 @@ enum {
 #define TDR_ERROR                   3
 
 // Others
-#define SAVE_DATA_LIMIT             720000 //2 hours at 100hz  
+#define SAVE_DATA_LIMIT             720000  //2 hours at 100hz  
 #define SENSOR_DATA_QUEUE_SIZE      10
 #define SENSOR_RESPONSE_QUEUE_SIZE  50
 #define FIRMWARE_PACKET_LENGTH      256
 
-#define TIMEOUT_COMMAND_TIMER       100000      // us
-#define TIMEOUT_TDR_STATUS          5000000     // 5secs
-#define TIMEOUT_FIRMWARE_UPDATE     2000000
-#define TIMEOUT_IDLE                5000000     // 5secs
+// Timeout settings (us)
+#define TIMEOUT_COMMAND_TIMER       100000  // 0.1 secs
+#define TIMEOUT_TDR_STATUS          1000000 // 1 secs
+#define TIMEOUT_FIRMWARE_UPDATE     2000000 // 2 secs
+#define TIMEOUT_IDLE                5000000 // 5 secs
 
 // sensor response logic
 #define WAIT_IGNORE                     0
@@ -161,7 +166,7 @@ public:
     IG1(const IG1 &obj);
     ~IG1(void);
     void init();
-    void release() { delete this; };
+    void release() { disconnect(); delete this; };
 
     /////////////////////////////////////////////
     // Connection
@@ -354,7 +359,16 @@ public:
     - false: disable
     Returns: none
     */
-    void enableAutoReconnect(bool b);
+    void setAutoReconnectStatus(bool b);
+
+    /*
+    Function: get enable auto reconnection status
+    Parameters: none
+    Returns: 
+    - true: enable
+    - false: disable
+    */
+    bool getAutoReconnectStatus(void);
 
     /*
     Function: get status of sensor
@@ -632,6 +646,15 @@ public:
 
     // Error 
     std::string getLastErrMsg();
+    
+    /*
+    Function: Set library verbosity output
+    Parameters: 
+        - VERBOSE_NONE
+        - VERBOSE_INFO
+        - VERBOSE_DEBUG
+    Returns: void
+    */
     void setVerbose(int level);
 
     ///////////////////////////////////////////
@@ -649,6 +672,11 @@ public:
     IG1GpsData getSavedGpsData(int i);
 
 private:
+    void triggerRS485CommandMode();
+
+    void processCommandQueue();
+    void processIncomingData();
+
     void clearSensorDataQueue();
     void updateData();
     bool parseModbusByte(int n);
@@ -660,12 +688,15 @@ private:
     void clearCommandQueue();
 
 
+    void gpioInit();
+    void gpioDeinit();
     int gpioExport(unsigned int gpio);
     int gpioUnexport(unsigned int gpio);
     int gpioSetDirection(unsigned int gpio, unsigned int out_flag);
     int gpioSetValue(unsigned int gpio, unsigned int value);
     int gpioGetValue(unsigned int gpio, unsigned int *value);
 
+    void cleanup();
 private:
     // General settings
     bool autoReconnect;
@@ -689,6 +720,9 @@ private:
     
     // LPBus
     LPPacket packet;
+    bool ackReceived;
+    bool nackReceived;
+    bool dataReceived;
 
     // Internal thread
     std::thread *t;
@@ -724,7 +758,6 @@ private:
     // Sensor settings
     bool hasNewSettings;
     IG1AdvancedSettings sensorSettings;
-    int transmitDataRegisterStatus;   // TDR_INVALID: TDR_VALID : TDR_UPDATING
     MicroMeasure mmTransmitDataRegisterStatus;
 
     // Imu data
@@ -740,10 +773,6 @@ private:
     
     // Firmware update
     std::ifstream ifs;
-    bool sensorUpdating;
-    bool ackReceived;
-    bool nackReceived;
-    bool dataReceived;
     long long firmwarePages;
     int firmwarePageSize;
     unsigned long firmwareRemainder;

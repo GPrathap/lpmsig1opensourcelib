@@ -112,6 +112,7 @@ bool Serial::isConnected()
 
 int Serial::set_interface_attribs (int fd, int speed, int parity)
 {
+    /*
     struct termios2 tty;
 
 
@@ -149,6 +150,71 @@ int Serial::set_interface_attribs (int fd, int speed, int parity)
     {
         return -1;
     }
+    */
+
+     struct termios2 config;
+
+    if (ioctl(fd, TCGETS2, &config) < 0)
+    {
+        return -1;
+    }
+
+    config.c_cflag &= ~CBAUD;
+    config.c_cflag |= BOTHER;
+    config.c_ispeed = speed;
+    config.c_ospeed = speed;
+
+    
+    config.c_iflag &= ~(IGNBRK | IXANY | INLCR | IGNCR | ICRNL);
+    config.c_iflag &= ~IXON;              // disable XON/XOFF flow control (output)
+    config.c_iflag &= ~IXOFF;             // disable XON/XOFF flow control (input)
+    config.c_cflag &= ~CRTSCTS;           // disable RTS flow control
+    config.c_lflag = 0;
+    config.c_oflag = 0;
+    config.c_cflag &= ~CSIZE;
+    config.c_cflag |= CS8;                // 8-bit chars
+    config.c_cflag |= CLOCAL;             // ignore modem controls
+    config.c_cflag |= CREAD;              // enable reading
+    config.c_cflag &= ~(PARENB | PARODD); // disable parity
+    config.c_cflag &= ~CSTOPB;            // one stop bit
+    config.c_cc[VMIN] = 0;                // read doesn´t block
+    config.c_cc[VTIME] = 5;               // 0.5 seconds read timeout
+
+    config.c_cflag |= parity;
+
+    if (ioctl(fd, TCSETS2, &config) < 0)
+    {
+        return -1;
+    }
+
+    /*
+    struct termios2 config;
+
+    if (ioctl(fd, TCGETS2, &config) < 0)
+    {
+        return -1;
+    }
+ 	config.c_iflag &= ~(IGNBRK | IXANY | INLCR | IGNCR | ICRNL);
+    config.c_iflag &= ~IXON;    		  // disable XON/XOFF flow control (output)
+    config.c_iflag &= ~IXOFF;   		  // disable XON/XOFF flow control (input)
+    config.c_cflag &= ~CRTSCTS; 		  // disable RTS flow control
+    config.c_lflag = 0;
+    config.c_oflag = 0;
+    config.c_cflag &= ~CSIZE;
+    config.c_cflag |= CS8;                // 8-bit chars
+    config.c_cflag |= CLOCAL;             // ignore modem controls
+    config.c_cflag |= CREAD;              // enable reading
+    config.c_cflag &= ~(PARENB | PARODD); // disable parity
+    config.c_cflag &= ~CSTOPB;            // one stop bit
+    config.c_cc[VMIN] = 0;                // read doesn´t block
+    config.c_cc[VTIME] = 5;               // 0.5 seconds read timeout
+
+
+    if (ioctl(fd, TCSETS2, &config) < 0)
+    {
+        return -1;
+    }
+    */
     
     return 0;
 }

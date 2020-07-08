@@ -10,7 +10,7 @@
 // Verbose level
 enum {
     VERBOSE_NONE,
-    VERBOSE_DEFAULT,
+    VERBOSE_INFO,
     VERBOSE_DEBUG
 };
 
@@ -27,7 +27,7 @@ class LpLog
         
     private:
         LpLog() {
-            verboseLevel = VERBOSE_DEFAULT;
+            verboseLevel = VERBOSE_INFO;
         };
 
     public:
@@ -46,19 +46,19 @@ class LpLog
             va_list a_list;
             va_start(a_list, str);
             if (!tag.empty())
-                printf("[ %-8s] DEBUG: ", tag.c_str());
+                printf("[ %4s] [ %-8s]: ", "DBUG", tag.c_str());
             vprintf(str, a_list);
             va_end(a_list);
         } 
 
         void i(std::string tag, const char* str, ...)
         {
-            if (verboseLevel < VERBOSE_DEFAULT)
+            if (verboseLevel < VERBOSE_INFO)
                 return;
             va_list a_list;
             va_start(a_list, str);
             if (!tag.empty())
-                printf("[ %-8s] INFO: ", tag.c_str());
+                printf("[ %4s] [ %-8s]: ", "INFO", tag.c_str());
             vprintf(str, a_list);
             va_end(a_list);
         } 
@@ -68,7 +68,7 @@ class LpLog
             va_list a_list;
             va_start(a_list, str);
             if (!tag.empty())
-                printf("[ %-8s] ERR: ", tag.c_str());
+                printf("[ %4s] [ %-8s]: ", "ERR", tag.c_str());
             vprintf(str, a_list);
             va_end(a_list);
         } 

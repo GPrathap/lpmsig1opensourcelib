@@ -1,6 +1,5 @@
 
 #include <string>
-
 #include "ros/ros.h"
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/MagneticField.h"
@@ -11,7 +10,6 @@
 #include "lpsensor/LpmsIG1I.h"
 #include "lpsensor/SensorDataI.h"
 #include "lpsensor/LpmsIG1Registers.h"
-
 
 struct IG1Command
 {
@@ -38,6 +36,7 @@ public:
 
     // Service
     ros::ServiceServer autocalibration_serv;
+    ros::ServiceServer autoReconnect_serv;
     ros::ServiceServer gyrocalibration_serv;
     ros::ServiceServer resetHeading_serv;
     ros::ServiceServer getImuData_serv;
@@ -50,6 +49,7 @@ public:
     // Parameters
     std::string comportNo;
     int baudrate;
+    bool autoReconnect;
     std::string frame_id;
     int rate;
 
@@ -60,21 +60,26 @@ public:
         // Get node parameters
         private_nh.param<std::string>("port", comportNo, "/dev/ttyUSB0");
         private_nh.param("baudrate", baudrate, 921600);
+        private_nh.param("autoreconnect", autoReconnect, true);
         private_nh.param<std::string>("frame_id", frame_id, "imu");
         private_nh.param("rate", rate, 200);
 
         // Create LpmsIG1 object 
         sensor1 = IG1Factory();
+        sensor1->setVerbose(VERBOSE_INFO);
+        sensor1->setAutoReconnectStatus(autoReconnect);
 
         ROS_INFO("Settings");
         ROS_INFO("Port: %s", comportNo.c_str());
         ROS_INFO("Baudrate: %d", baudrate);
+        ROS_INFO("Auto reconnect: %s", autoReconnect? "Enabled":"Disabled");
         
         imu_pub = nh.advertise<sensor_msgs::Imu>("data",1);
         mag_pub = nh.advertise<sensor_msgs::MagneticField>("mag",1);
         autocalibration_status_pub = nh.advertise<std_msgs::Bool>("is_autocalibration_active", 1, true);
 
         autocalibration_serv = nh.advertiseService("enable_gyro_autocalibration", &LpIG1Proxy::setAutocalibration, this);
+        autoReconnect_serv = nh.advertiseService("enable_auto_reconnect", &LpIG1Proxy::setAutoReconnect, this);
         gyrocalibration_serv = nh.advertiseService("calibrate_gyroscope", &LpIG1Proxy::calibrateGyroscope, this);
         resetHeading_serv = nh.advertiseService("reset_heading", &LpIG1Proxy::resetHeading, this);
         getImuData_serv = nh.advertiseService("get_imu_data", &LpIG1Proxy::getImuData, this);
@@ -105,7 +110,7 @@ public:
         {
             ROS_INFO("Sensor connected");
             ros::Duration(1).sleep();
-            cmdGotoStreamingMode ();
+            sensor1->commandGotoStreamingMode();
         }
         else 
         {
@@ -204,6 +209,7 @@ public:
         cmdSetEnableAutocalibration(req.data);
         ros::Duration(0.2).sleep();
         cmdGetEnableAutocalibration();
+        ros::Duration(0.1).sleep();
 
         double retryElapsedTime = 0;
         int retryCount = 0;
@@ -225,7 +231,6 @@ public:
         }
         ROS_INFO("set_autocalibration done");
 
-
         // Get settings
         sensor1->getSettings(settings);
 
@@ -241,12 +246,29 @@ public:
             msg.append(std::string("[Failed] current autocalibration status set to: ") + (settings.enableGyroAutocalibration?"True":"False"));
         }
 
+        ROS_INFO("%s", msg.c_str());
         res.message = msg;
 
         publishIsAutocalibrationActive();
         return res.success;
     }
 
+    // Auto reconnect
+    bool setAutoReconnect (std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+    {
+        ROS_INFO("set_auto_reconnect");
+
+        sensor1->setAutoReconnectStatus(req.data);
+        
+        res.success = true;
+        std::string msg;
+        msg.append(std::string("[Success] auto reconnection status set to: ") + (sensor1->getAutoReconnectStatus()?"True":"False"));
+    
+        ROS_INFO("%s", msg.c_str());
+        res.message = msg;
+
+        return res.success;
+    }
     
     // reset heading
     bool resetHeading (std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)

@@ -1,6 +1,5 @@
 
 #include <string>
-
 #include "ros/ros.h"
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/MagneticField.h"
@@ -37,6 +36,7 @@ public:
 
     // Service
     ros::ServiceServer autocalibration_serv;
+    ros::ServiceServer autoReconnect_serv;
     ros::ServiceServer gyrocalibration_serv;
     ros::ServiceServer resetHeading_serv;
     ros::ServiceServer getImuData_serv;
@@ -49,6 +49,7 @@ public:
     // Parameters
     std::string comportNo;
     int baudrate;
+    bool autoReconnect;
     std::string frame_id;
     int rs485ControlPin;
     int rs485ControlPinToggleWaitMs;
@@ -61,20 +62,24 @@ public:
         // Get node parameters
         private_nh.param<std::string>("port", comportNo, "/dev/ttyUSB0");
         private_nh.param("baudrate", baudrate, 115200);
+        private_nh.param("autoreconnect", autoReconnect, true);
         private_nh.param("rs485ControlPin", rs485ControlPin, -1);
-        private_nh.param("rs485ControlPinToggleWaitMs", rs485ControlPinToggleWaitMs, 1);
+        private_nh.param("rs485ControlPinToggleWaitMs", rs485ControlPinToggleWaitMs, 2);
         private_nh.param<std::string>("frame_id", frame_id, "imu");
         private_nh.param("rate", rate, 200);
 
         // Create LpmsIG1 object 
         sensor1 = IG1Factory();
-        sensor1->setConnectionInterface(CONNECTION_INTERFACE_485);
+        sensor1->setVerbose(VERBOSE_INFO);
+        sensor1->setAutoReconnectStatus(autoReconnect);
+        sensor1->setConnectionInterface(CONNECTION_INTERFACE_RS485);
         sensor1->setControlGPIOForRs485(rs485ControlPin);
         sensor1->setControlGPIOToggleWaitMs(rs485ControlPinToggleWaitMs); 
 
         ROS_INFO("Settings");
         ROS_INFO("Port: %s", comportNo.c_str());
         ROS_INFO("Baudrate: %d", baudrate);
+        ROS_INFO("Auto reconnect: %s", autoReconnect? "Enabled":"Disabled");
         ROS_INFO("rs485ControlPin: %d", rs485ControlPin);
         ROS_INFO("rs485ControlPinToggleWaitMs: %d", rs485ControlPinToggleWaitMs);
 
@@ -83,6 +88,7 @@ public:
         autocalibration_status_pub = nh.advertise<std_msgs::Bool>("is_autocalibration_active", 1, true);
 
         autocalibration_serv = nh.advertiseService("enable_gyro_autocalibration", &LpIG1Proxy::setAutocalibration, this);
+        autoReconnect_serv = nh.advertiseService("enable_auto_reconnect", &LpIG1Proxy::setAutoReconnect, this);
         gyrocalibration_serv = nh.advertiseService("calibrate_gyroscope", &LpIG1Proxy::calibrateGyroscope, this);
         resetHeading_serv = nh.advertiseService("reset_heading", &LpIG1Proxy::resetHeading, this);
         getImuData_serv = nh.advertiseService("get_imu_data", &LpIG1Proxy::getImuData, this);
@@ -113,7 +119,7 @@ public:
         {
             ROS_INFO("Sensor connected");
             ros::Duration(1).sleep();
-            cmdGotoStreamingMode ();
+            sensor1->commandGotoStreamingMode();
         }
         else 
         {
@@ -204,19 +210,13 @@ public:
     bool setAutocalibration (std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
     {
         ROS_INFO("set_autocalibration");
-        cmdGotoCommandMode();
-        ros::Duration(0.1).sleep();
-        cmdGotoCommandMode();
-        ros::Duration(0.1).sleep();
 
         // clear current settings
         IG1SettingsI settings;
         sensor1->getSettings(settings);
 
-        cmdSetEnableAutocalibration(req.data);
+        sensor1->commandSetGyroAutoCalibration(req.data);
         ros::Duration(0.2).sleep();
-        cmdGetEnableAutocalibration();
-        ros::Duration(0.1).sleep();
 
         double retryElapsedTime = 0;
         int retryCount = 0;
@@ -229,7 +229,7 @@ public:
             if (retryElapsedTime > 2.0)
             {
                 retryElapsedTime = 0;
-                cmdGetEnableAutocalibration();
+                sensor1->commandGetGyroAutoCalibration();
                 retryCount++;
             }
 
@@ -253,10 +253,27 @@ public:
             msg.append(std::string("[Failed] current autocalibration status set to: ") + (settings.enableGyroAutocalibration?"True":"False"));
         }
 
+        ROS_INFO("%s", msg.c_str());
         res.message = msg;
 
         publishIsAutocalibrationActive();
-        cmdGotoStreamingMode();
+        return res.success;
+    }
+
+    // Auto reconnect
+    bool setAutoReconnect (std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+    {
+        ROS_INFO("set_auto_reconnect");
+
+        sensor1->setAutoReconnectStatus(req.data);
+        
+        res.success = true;
+        std::string msg;
+        msg.append(std::string("[Success] auto reconnection status set to: ") + (sensor1->getAutoReconnectStatus()?"True":"False"));
+    
+        ROS_INFO("%s", msg.c_str());
+        res.message = msg;
+
         return res.success;
     }
 
@@ -264,18 +281,12 @@ public:
     bool resetHeading (std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
         ROS_INFO("reset_heading");
-        cmdGotoCommandMode();
-        ros::Duration(0.1).sleep();
-        cmdGotoCommandMode();
-        ros::Duration(0.1).sleep();
-        
-        cmdResetHeading();
+
+        sensor1->commandSetOffsetMode(LPMS_OFFSET_MODE_HEADING);
 
         res.success = true;
-        res.message = "[Success] Heading reset";
+        res.message = "[Success] Heading resets";
 
-        ros::Duration(0.1).sleep();
-        cmdGotoStreamingMode();
         return true;
     }
 
@@ -283,23 +294,18 @@ public:
     {
         ROS_INFO("calibrate_gyroscope: Please make sure the sensor is stationary for 4 seconds");
         
-        cmdGotoCommandMode();
-        ros::Duration(0.1).sleep();
-        
-        cmdCalibrateGyroscope();
+        sensor1->commandStartGyroCalibration();
         ros::Duration(4).sleep();
         res.success = true;
         res.message = "[Success] Gyroscope calibration procedure completed";
         ROS_INFO("calibrate_gyroscope: Gyroscope calibration procedure completed");
-        cmdGotoStreamingMode();
+
+        //sensor1->commandGotoStreamingMode();
         return true;
     }
 
     bool getImuData (std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
-        cmdGotoCommandMode();
-        ros::Duration(0.1).sleep();
-        
         cmdGetImuData();
         res.success = true;
         res.message = "[Success] Get imu data";
@@ -308,7 +314,7 @@ public:
 
     bool setStreamingMode (std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
-        cmdGotoStreamingMode();
+        sensor1->commandGotoStreamingMode();
         res.success = true;
         res.message = "[Success] Set streaming mode";
         return true;
@@ -316,10 +322,7 @@ public:
 
     bool setCommandMode (std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
     {
-        cmdGotoCommandMode();
-        ros::Duration(0.1).sleep();
-        
-        cmdGotoCommandMode();
+        sensor1->commandGotoCommandMode();
         res.success = true;
         res.message = "[Success] Set command mode";
         return true;
@@ -329,22 +332,6 @@ public:
     // Helpers
     ///////////////////////////////////////////////////
 
-    void cmdGotoCommandMode ()
-    {
-        IG1Command cmd;
-        cmd.command = GOTO_COMMAND_MODE;
-        cmd.dataLength = 0;
-        sensor1->sendCommand(cmd.command, cmd.dataLength, cmd.data.c);
-    }
-
-    void cmdGotoStreamingMode ()
-    {
-        IG1Command cmd;
-        cmd.command = GOTO_STREAM_MODE;
-        cmd.dataLength = 0;
-        sensor1->sendCommand(cmd.command, cmd.dataLength, cmd.data.c);
-    }
-
     void cmdGetImuData()
     {
         IG1Command cmd;
@@ -352,41 +339,7 @@ public:
         cmd.dataLength = 0;
         sensor1->sendCommand(cmd.command, cmd.dataLength, cmd.data.c);
     }
-
-    void cmdCalibrateGyroscope()
-    {
-        IG1Command cmd;
-        cmd.command = START_GYR_CALIBRATION;
-        cmd.dataLength = 0;
-        sensor1->sendCommand(cmd.command, cmd.dataLength, cmd.data.c);
-    }
-
-    void cmdResetHeading()
-    {
-        IG1Command cmd;
-        cmd.command = SET_ORIENTATION_OFFSET;
-        cmd.dataLength = 4;
-        cmd.data.i[0] = LPMS_OFFSET_MODE_HEADING;
-        sensor1->sendCommand(cmd.command, cmd.dataLength, cmd.data.c);
-    }
-
-    void cmdSetEnableAutocalibration(int status)
-    {
-        IG1Command cmd;
-        cmd.command = SET_ENABLE_GYR_AUTOCALIBRATION;
-        cmd.dataLength = 4;
-        cmd.data.i[0] = status;
-        sensor1->sendCommand(cmd.command, cmd.dataLength, cmd.data.c);
-    }
-
-    void cmdGetEnableAutocalibration()
-    {
-        IG1Command cmd;
-        cmd.command = GET_ENABLE_GYR_AUTOCALIBRATION;
-        cmd.dataLength = 0;
-        sensor1->sendCommand(cmd.command, cmd.dataLength, cmd.data.c);
-    }
-
+    
 
  private:
 

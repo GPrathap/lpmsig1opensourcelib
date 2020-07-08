@@ -29,8 +29,8 @@
     $ mkdir -p ~/catkin_ws/src
     $ cd ~/catkin_ws/src
 
-# Copy ros_example folder to your ROS src folder.
-    $ cp -r ~/lpmsig1opensourcelib/ros_example ./
+# We suggest to create a symbolic link to ros_example folder instead of copying
+    $ ln -s ~/lpmsig1opensourcelib/ros_example lpms_ig1_ros_example
 
 # Compiling ROS example programs
     $ cd ~/catkin_ws
@@ -44,28 +44,22 @@ Open a new terminal window and run roscore
 ```
 Connect `LPMS-IG1/BE1` sensor to PC.
 Now you can run lpms_ig1 node on your other terminal windows.
-
-You should see the following output on successful connection:
+The following are some example commands to launch ros lpms_ig1 node. Please change the parameters appropriately according to your sensor settings:
 
 *IG1*:
 ```bash
-    $ rosrun lpms_ig1 lpms_ig1_node
-    #[IG1] COM:/dev/ttyUSB0 connection established
-    #[IG1] Send get transmit data
+    $ rosrun lpms_ig1 lpms_ig1_node _port:=LPMSIG1000001 _baudrate:=921600
 ```
 
 *IG1-RS485*:
 ```bash
-    $ rosrun lpms_ig1 lpms_ig1_rs485_node
-    #[IG1] COM:/dev/ttyS1 connection established
-    #[IG1] Send get transmit data
+    $ rosrun lpms_ig1 lpms_ig1_rs485_node _port:=/dev/ttyTHS2  _baudrate:=115200 _rs485ControlPin:=388 _rs485ControlPinToggleWaitMs:=2
+
 ```
 
 *BE1*:
 ```bash
-    $ rosrun lpms_ig1 lpms_be1_node
-    #[IG1] COM:/dev/ttyUSB0 connection established
-    #[IG1] Send get transmit data
+    $ rosrun lpms_ig1 lpms_be1_node _port:=/dev/ttyUSB0 _baudrate:=115200
 ```
  
 Please refer to [Troubleshooting](#troubleshooting) section is error occurs.
@@ -143,17 +137,28 @@ lpms_be1_node is a driver for the LPMS-BE1 Inertial Measurement Unit.
 /imu/enable_gyro_autocalibration ([std_srvs/SetBool](http://docs.ros.org/melodic/api/std_srvs/html/srv/SetBool.html))
 :   Turn on/off autocalibration function in the IMU. The status of autocalibration can be obtained by subscribing to the /imu/is_autocalibration_active topic. A message will published to /imu/is_autocalibration_active for each call to /imu/autocalibrate. 
 
+/imu/enable_auto_reconnect ([std_srvs/SetBool](http://docs.ros.org/melodic/api/std_srvs/html/srv/SetBool.html))
+:   Turn on/off auto reconnect function in the library. When auto reconnect is enabled, the library will reestablish connection to the sensor if it detects no data from the sensor for more than 5 seconds. With auto reconnect enabled, the library will automatically put the sensor into streaming mode. We recommend to disable auto reconnect if user plans to interact with sensor via polling method.
+
 /imu/get_imu_data ([std_srvs/Empty](http://docs.ros.org/api/std_srvs/html/srv/Empty.html)) *IG1-RS485 only*
 :   Poll imu sensor for latest sensor data. Latest sensor data will be publish to /imu/data topic once the driver received a new data from the sensor.
 
-#### 2.1.3 Parameters
+/imu/set_streaming_mode ([std_srvs/Empty](http://docs.ros.org/api/std_srvs/html/srv/Empty.html)) *IG1-RS485 only*
+:   Put sensor into streaming mode
 
+/imu/set_command_mode ([std_srvs/Empty](http://docs.ros.org/api/std_srvs/html/srv/Empty.html)) *IG1-RS485 only*
+:   Put sensor into command mode
+
+#### 2.1.3 Parameters
 
 ~port (string, default: /dev/ttyUSB0) 
 :   The port the IMU is connected to.
 
 ~baudrate (int, default IG1: 921600, IG1-RS485: 115200, BE1: 115200)
 :   Baudrate for the IMU sensor.
+
+~autoreconnect (bool, default True)
+:   Enable/disable autoreconnect in library
 
 ~frame_id (string, default: imu) 
 :   The frame in which imu readings will be returned.

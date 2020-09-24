@@ -1142,7 +1142,7 @@ void IG1::commandGetSensorInfo()
 
     addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_FOR_DEGRAD_OUTPUT));
     addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
@@ -1160,7 +1160,7 @@ void IG1::commandGetSensorInfo()
 
     addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_FOR_LPBUS_DATA_PRECISION));
 
     addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
@@ -2277,6 +2277,14 @@ bool IG1::parseSensorData(const LPPacket &p)
     }
 
     case GET_DEGRAD_OUTPUT:
+        mLockCommandQueue.lock();
+        if (!commandQueue.empty())
+        {
+            if (commandQueue.front().expectedResponse == WAIT_FOR_DEGRAD_OUTPUT)
+                commandQueue.front().processed = true;
+        }
+        mLockCommandQueue.unlock();
+
         memcpy(i2c.c, packet.data, packet.length);
         sensorSettings.useRadianOutput = i2c.int_val;
         res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET_DEGRAD_OUTPUT: ";
@@ -2468,6 +2476,14 @@ bool IG1::parseSensorData(const LPPacket &p)
 
 
     case GET_LPBUS_DATA_PRECISION:
+        mLockCommandQueue.lock();
+        if (!commandQueue.empty())
+        {
+            if (commandQueue.front().expectedResponse == WAIT_FOR_LPBUS_DATA_PRECISION)
+                commandQueue.front().processed = true;
+        }
+        mLockCommandQueue.unlock();
+
         memcpy(&sensorSettings.uartDataPrecision, packet.data, packet.length);
 
         res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET UART LPBUS DATA PRECISION: ";

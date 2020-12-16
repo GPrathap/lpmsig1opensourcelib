@@ -32,6 +32,9 @@ IG1::IG1()
 
     autoReconnect = true;
     reconnectCount = 0;
+    
+    startupSensorMode = SENSOR_MODE_STREAMING;
+    currentSensorMode = startupSensorMode;
 }
 
 IG1::IG1(const IG1 &obj)
@@ -62,6 +65,7 @@ void IG1::init()
     mmUpdating.reset();
 
     // Sensor
+    currentSensorMode = startupSensorMode;
     sensorStatus = STATUS_DISCONNECTED;
     errMsg = "";
     timeoutThreshold = TIMEOUT_IDLE;
@@ -266,7 +270,9 @@ void IG1::commandGotoCommandMode()
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_SENSOR_STATUS, WAIT_IGNORE));
+    currentSensorMode = SENSOR_MODE_COMMAND;
 }
+
 void IG1::commandGotoStreamingMode()
 {
     if (sensorStatus != STATUS_CONNECTED)
@@ -283,6 +289,7 @@ void IG1::commandGotoStreamingMode()
     // command will put IG1-RS485 back into command mode
     if (connectionInterface != CONNECTION_INTERFACE_RS485)
         addCommandQueue(IG1Command(GET_SENSOR_STATUS, WAIT_IGNORE));
+    currentSensorMode = SENSOR_MODE_STREAMING;
 }
 
 //Sensor ID
@@ -293,12 +300,18 @@ void IG1::commandGetSensorID(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
+    //else if(connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    //   addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSetSensorID(uint32_t id)
@@ -308,6 +321,8 @@ void IG1::commandSetSensorID(uint32_t id)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -318,7 +333,8 @@ void IG1::commandSetSensorID(uint32_t id)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -330,11 +346,14 @@ void IG1::commandGetSensorFrequency(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -345,6 +364,8 @@ void IG1::commandSetSensorFrequency(uint32_t freq)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -355,7 +376,8 @@ void IG1::commandSetSensorFrequency(uint32_t freq)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+ 
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -366,11 +388,14 @@ void IG1::commandGetSensorGyroRange(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -381,6 +406,8 @@ void IG1::commandSetSensorGyroRange(uint32_t range)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -391,7 +418,8 @@ void IG1::commandSetSensorGyroRange(uint32_t range)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -402,11 +430,14 @@ void IG1::commandStartGyroCalibration(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(START_GYR_CALIBRATION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -417,11 +448,14 @@ void IG1::commandGetSensorAccRange(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -432,6 +466,8 @@ void IG1::commandSetSensorAccRange(uint32_t range)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -442,7 +478,8 @@ void IG1::commandSetSensorAccRange(uint32_t range)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -453,11 +490,14 @@ void IG1::commandGetSensorMagRange(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_MAG_RANGE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -468,6 +508,8 @@ void IG1::commandSetSensorMagRange(uint32_t range)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -478,7 +520,8 @@ void IG1::commandSetSensorMagRange(uint32_t range)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_MAG_RANGE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -489,12 +532,15 @@ void IG1::commandGetSensorUseRadianOutput(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -505,6 +551,8 @@ void IG1::commandSetSensorUseRadianOutput(bool b)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -515,7 +563,8 @@ void IG1::commandSetSensorUseRadianOutput(bool b)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -526,12 +575,15 @@ void IG1::commandStartMagCalibration(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(START_MAG_CALIBRATION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -542,12 +594,15 @@ void IG1::commandStopMagCalibration(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(STOP_MAG_CALIBRATION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+ 
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -558,12 +613,15 @@ void IG1::commandGetMagRefrence(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_MAG_REFERENCE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -574,6 +632,8 @@ void IG1::commandSetMagRefrence(uint32_t reference)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -584,7 +644,8 @@ void IG1::commandSetMagRefrence(uint32_t reference)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_MAG_REFERENCE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -595,11 +656,14 @@ void IG1::commandGetSensorMagCalibrationTimeout(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -610,6 +674,8 @@ void IG1::commandSetSensorMagCalibrationTimeout(float second)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -620,7 +686,8 @@ void IG1::commandSetSensorMagCalibrationTimeout(float second)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -632,14 +699,18 @@ void IG1::commandGetCanStartId(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 
 }
+
 void IG1::commandSetCanStartId(uint32_t data)
 {
     if (sensorStatus != STATUS_CONNECTED)
@@ -647,6 +718,8 @@ void IG1::commandSetCanStartId(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -657,7 +730,8 @@ void IG1::commandSetCanStartId(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -668,11 +742,14 @@ void IG1::commandGetCanBaudrate(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 
 }
@@ -684,6 +761,8 @@ void IG1::commandSetCanBaudrate(uint32_t baudrate)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -694,7 +773,8 @@ void IG1::commandSetCanBaudrate(uint32_t baudrate)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -706,11 +786,14 @@ void IG1::commandGetCanDataPrecision(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -721,6 +804,8 @@ void IG1::commandSetCanDataPrecision(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -731,7 +816,8 @@ void IG1::commandSetCanDataPrecision(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -742,11 +828,14 @@ void IG1::commandGetCanChannelMode(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -757,6 +846,8 @@ void IG1::commandSetCanChannelMode(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -767,7 +858,8 @@ void IG1::commandSetCanChannelMode(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -778,11 +870,14 @@ void IG1::commandGetCanMapping(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -793,6 +888,8 @@ void IG1::commandSetCanMapping(uint32_t map[16])
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
 
@@ -804,7 +901,8 @@ void IG1::commandSetCanMapping(uint32_t map[16])
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -815,11 +913,14 @@ void IG1::commandGetCanHeartbeat(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -830,6 +931,8 @@ void IG1::commandSetCanHeartbeat(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -840,7 +943,8 @@ void IG1::commandSetCanHeartbeat(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -851,6 +955,8 @@ void IG1::commandSetFilterMode(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -861,7 +967,8 @@ void IG1::commandSetFilterMode(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -872,11 +979,14 @@ void IG1::commandGetFilterMode(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -887,6 +997,8 @@ void IG1::commandSetGyroAutoCalibration(bool enable)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -897,7 +1009,8 @@ void IG1::commandSetGyroAutoCalibration(bool enable)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -908,11 +1021,14 @@ void IG1::commandGetGyroAutoCalibration(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -923,6 +1039,8 @@ void IG1::commandSetOffsetMode(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -932,7 +1050,8 @@ void IG1::commandSetOffsetMode(uint32_t data)
 
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -943,11 +1062,13 @@ void IG1::commandResetOffsetMode(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(RESET_ORIENTATION_OFFSET, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+ 
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -958,11 +1079,14 @@ void IG1::commandSaveGPSState(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(SAVE_GPS_STATE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -973,11 +1097,14 @@ void IG1::commandClearGPSState(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(CLEAR_GPS_STATE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -988,6 +1115,8 @@ void IG1::commandSetGpsTransmitData(uint32_t data, uint32_t data1)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -999,7 +1128,8 @@ void IG1::commandSetGpsTransmitData(uint32_t data, uint32_t data1)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1010,11 +1140,14 @@ void IG1::commandGetGpsTransmitData(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1025,6 +1158,8 @@ void IG1::commandSetUartBaudRate(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -1035,9 +1170,10 @@ void IG1::commandSetUartBaudRate(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
-}
+}        
 
 void IG1::commandGetUartBaudRate(void)
 {
@@ -1046,11 +1182,14 @@ void IG1::commandGetUartBaudRate(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1061,6 +1200,8 @@ void IG1::commandSetUartDataFormat(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -1071,7 +1212,8 @@ void IG1::commandSetUartDataFormat(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+    
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1082,11 +1224,14 @@ void IG1::commandGetUartDataFormat(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+  
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1097,6 +1242,8 @@ void IG1::commandSetUartDataPrecision(uint32_t data)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -1107,7 +1254,8 @@ void IG1::commandSetUartDataPrecision(uint32_t data)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1118,11 +1266,14 @@ void IG1::commandGetUartDataPrecision(void)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_IGNORE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1131,8 +1282,12 @@ void IG1::commandGetSensorInfo()
     if (sensorStatus != STATUS_CONNECTING &&
         sensorStatus != STATUS_CONNECTED)
         return;
+    
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
+    addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GET_SERIAL_NUMBER, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_SENSOR_MODEL, WAIT_IGNORE));
@@ -1165,13 +1320,8 @@ void IG1::commandGetSensorInfo()
     addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
 
-
-    // Put RS485 sensor into streaming mode if autoreconect is enabled
-   
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
-    {
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
-    }
 }
 
 void IG1::commandSaveParameters()
@@ -1181,11 +1331,14 @@ void IG1::commandSaveParameters()
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(WRITE_REGISTERS));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1196,11 +1349,14 @@ void IG1::commandResetFactory()
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(RESTORE_FACTORY_VALUE));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
@@ -1211,6 +1367,8 @@ void IG1::commandSetTransmitData(uint32_t config)
         log.e(TAG, "Sensor not connected\n");
         return;
     }
+    int previousSensorMode = currentSensorMode;
+    
     clearCommandQueue();
     triggerRS485CommandMode();
     IG1Command cmd1;
@@ -1221,12 +1379,14 @@ void IG1::commandSetTransmitData(uint32_t config)
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(cmd1);
     addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
-    if (connectionInterface != CONNECTION_INTERFACE_RS485 || autoReconnect)
+   
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
 {
+
     if (data == NULL)
         length = 0;
 
@@ -1282,6 +1442,13 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
 // Sensor interface
 /////////////////////////////////////
 // General
+void IG1::setStartupSensorMode(int mode)
+{
+    if (mode > SENSOR_MODE_STREAMING)
+        mode = SENSOR_MODE_STREAMING;
+    startupSensorMode = mode;
+}
+
 void IG1::setAutoReconnectStatus(bool b)
 { 
     autoReconnect = b; 
@@ -1645,7 +1812,59 @@ void IG1::triggerRS485CommandMode()
 {
     if (connectionInterface == CONNECTION_INTERFACE_RS485)
     {
-        addCommandQueue(IG1Command(GOTO_COMMAND_MODE, WAIT_IGNORE));
+        
+        uint8_t cmdBuffer[512];
+        int idx = 0;
+        uint8_t dummy = 0x0A;
+        cmdBuffer[idx++] = 0x3A;
+        cmdBuffer[idx++] = 0x00;
+        cmdBuffer[idx++] = 0x00;
+        cmdBuffer[idx++] = 0x08;
+        cmdBuffer[idx++] = 0x00;
+        cmdBuffer[idx++] = 0x00;
+        cmdBuffer[idx++] = 0x00;
+        cmdBuffer[idx++] = 0x08;
+        cmdBuffer[idx++] = 0x00;
+        cmdBuffer[idx++] = 0x0D;
+        cmdBuffer[idx++] = 0x0A;
+
+        if(ctrlGpio >= 0)
+        {
+            gpioSetValue(ctrlGpio, 1); //TX
+            this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//milliseconds
+           
+        }
+        
+        for (int i=0; i<10; ++i) 
+        {
+    #ifdef _WIN32
+            sp.writeData((const char*)&dummy, 1);
+    #else
+            sp.writeData(&dummy, 1);
+    #endif
+            this_thread::sleep_for(chrono::milliseconds(1));//milliseconds
+        }
+
+        //this_thread::sleep_for(chrono::milliseconds(10));//milliseconds
+        for (int i=0; i<idx; ++i) 
+        {
+    #ifdef _WIN32
+            sp.writeData((const char*)cmdBuffer+i, 1);
+    #else
+            sp.writeData(cmdBuffer+i, 1);
+    #endif
+    
+            this_thread::sleep_for(chrono::milliseconds(1));//milliseconds
+        }
+        
+
+
+        if(ctrlGpio >= 0)
+        {
+            this_thread::sleep_for(chrono::milliseconds(ctrlGpioToggleWaitMs));//milliseconds
+            gpioSetValue(ctrlGpio, 0); //RX
+        }
+        
     }
 }
 
@@ -1653,6 +1872,7 @@ void IG1::processCommandQueue()
 {
     // Send command
     mLockCommandQueue.lock();
+    /*
     if (!commandQueue.empty() && mmCommandTimer.measure() > TIMEOUT_COMMAND_TIMER)
     {
         if (commandQueue.front().processed)
@@ -1673,6 +1893,47 @@ void IG1::processCommandQueue()
             }
         }
     }
+    */
+    if (!commandQueue.empty() && mmCommandTimer.measure() > TIMEOUT_COMMAND_TIMER)
+    {
+        
+        if (!commandQueue.front().sent) 
+        {
+            //IG1Command cmd = commandQueue.front();
+            sendCommand(commandQueue.front().command, commandQueue.front().dataLength, commandQueue.front().data.c);
+            commandQueue.front().sent = true;
+            
+            mmCommandTimer.reset();
+            if (commandQueue.front().expectedResponse == WAIT_IGNORE)
+            {
+                commandQueue.front().processed = true;
+            }
+        } 
+        // Process sent command
+        else 
+        {
+            if (mmCommandTimer.measure() > 200000) // .2sec no response, skip
+            {
+                if (commandQueue.front().expectedResponse != WAIT_IGNORE)
+                {
+                    log.e(TAG, "Command timeout. Resending Command : %d Retry: %d\r\n", commandQueue.front().command, ++commandQueue.front().retryCount);
+                    sendCommand(commandQueue.front().command, commandQueue.front().dataLength, commandQueue.front().data.c);
+                    commandQueue.front().sent = true;
+                    mmCommandTimer.reset();
+                } 
+            
+                // Check max resend
+                if (commandQueue.front().retryCount > 5) // max 5 retries
+                {
+                    commandQueue.front().processed = true;
+                }
+            }
+            
+        }
+        
+        if (commandQueue.front().processed)
+            commandQueue.pop();
+    }
     mLockCommandQueue.unlock();
 }
 
@@ -1685,8 +1946,8 @@ void IG1::processIncomingData()
     if (readResult > 0)
     {
         mmDataIdle.reset();
-        mmTransmitDataRegisterStatus.reset();
-        //logd(TAG, "data: %d\n", readResult);
+        //mmTransmitDataRegisterStatus.reset();
+        //log.d(TAG, "data: %d\n", readResult);
         parseModbusByte(readResult);
 
         if (sensorSettings.uartDataFormat == LPMS_UART_DATA_FORMAT_ASCII) {
@@ -1938,7 +2199,6 @@ bool IG1::parseModbusByte(int n)
     for (int i = 0; i < n; ++i)
     {
         b = incomingData[i];
-        //printf("%02X ", b);
 
         switch (packet.rxState) 
         {

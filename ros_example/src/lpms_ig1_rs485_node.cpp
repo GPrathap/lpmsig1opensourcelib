@@ -49,6 +49,7 @@ public:
     // Parameters
     std::string comportNo;
     int baudrate;
+    int startupMode;
     bool autoReconnect;
     std::string frame_id;
     int rs485ControlPin;
@@ -62,6 +63,7 @@ public:
         // Get node parameters
         private_nh.param<std::string>("port", comportNo, "/dev/ttyUSB0");
         private_nh.param("baudrate", baudrate, 115200);
+        private_nh.param("startupmode", startupMode, SENSOR_MODE_STREAMING);
         private_nh.param("autoreconnect", autoReconnect, true);
         private_nh.param("rs485ControlPin", rs485ControlPin, -1);
         private_nh.param("rs485ControlPinToggleWaitMs", rs485ControlPinToggleWaitMs, 2);
@@ -72,6 +74,7 @@ public:
         sensor1 = IG1Factory();
         sensor1->setVerbose(VERBOSE_INFO);
         sensor1->setAutoReconnectStatus(autoReconnect);
+        sensor1->setStartupSensorMode(startupMode);
         sensor1->setConnectionInterface(CONNECTION_INTERFACE_RS485);
         sensor1->setControlGPIOForRs485(rs485ControlPin);
         sensor1->setControlGPIOToggleWaitMs(rs485ControlPinToggleWaitMs); 
@@ -79,6 +82,7 @@ public:
         ROS_INFO("Settings");
         ROS_INFO("Port: %s", comportNo.c_str());
         ROS_INFO("Baudrate: %d", baudrate);
+        ROS_INFO("Startup mode: %s", (startupMode == 0)? "Command mode":"Streaming mode");
         ROS_INFO("Auto reconnect: %s", autoReconnect? "Enabled":"Disabled");
         ROS_INFO("rs485ControlPin: %d", rs485ControlPin);
         ROS_INFO("rs485ControlPinToggleWaitMs: %d", rs485ControlPinToggleWaitMs);
@@ -105,7 +109,7 @@ public:
 
         do
         {
-            ROS_INFO("Waiting for sensor to connect %d", sensor1->getStatus());
+            ROS_INFO("Waiting for sensor to connect. Sensor status: %d", sensor1->getStatus());
             ros::Duration(1).sleep();
         } while(
             ros::ok() &&
@@ -119,7 +123,7 @@ public:
         {
             ROS_INFO("Sensor connected");
             ros::Duration(1).sleep();
-            sensor1->commandGotoStreamingMode();
+            //sensor1->commandGotoStreamingMode();
         }
         else 
         {
@@ -167,9 +171,9 @@ public:
             imu_msg.angular_velocity.z = sd.gyroIAlignmentCalibrated.data[2]*3.1415926/180;
 
             // Fill linear acceleration data
-            imu_msg.linear_acceleration.x = sd.accCalibrated.data[0]*9.81;
-            imu_msg.linear_acceleration.y = sd.accCalibrated.data[1]*9.81;
-            imu_msg.linear_acceleration.z = sd.accCalibrated.data[2]*9.81;
+            imu_msg.linear_acceleration.x = -sd.accCalibrated.data[0]*9.81;
+            imu_msg.linear_acceleration.y = -sd.accCalibrated.data[1]*9.81;
+            imu_msg.linear_acceleration.z = -sd.accCalibrated.data[2]*9.81;
 
             /* Fill the magnetometer message */
             mag_msg.header.stamp = imu_msg.header.stamp;

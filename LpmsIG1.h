@@ -98,7 +98,7 @@ enum {
 
 // Timeout settings (us)
 #define TIMEOUT_COMMAND_TIMER       100000  // 0.1 secs
-#define TIMEOUT_TDR_STATUS          1000000 // 1 secs
+#define TIMEOUT_TDR_STATUS          5000000 // 5 secs
 #define TIMEOUT_FIRMWARE_UPDATE     2000000 // 2 secs
 #define TIMEOUT_IDLE                5000000 // 5 secs
 
@@ -109,7 +109,6 @@ enum {
 #define WAIT_FOR_TRANSMIT_DATA_REGISTER 3
 #define WAIT_FOR_CALIBRATION_DATA       4
 #define WAIT_FOR_SENSOR_SETTINGS        5
-
 
 #define SYSFS_GPIO_DIR "/sys/class/gpio"
 #define DEFAULT_GPIO_TOGGLE_WAIT_MS     400 //at 230400 bps
@@ -352,6 +351,16 @@ public:
     // Sensor interface
     /////////////////////////////////////////////
     // General
+    
+    /*
+    Function: Specify sensor to streaming or command mode after connect
+    Parameters:
+    - SENSOR_MODE_COMMAND: start up in command mode
+    - SENSOR_MODE_STREAMING: start up in streaming mode
+    Returns: none
+    */
+    void setStartupSensorMode(int mode);
+    
     /*
     Function: enable auto reconnection
     Parameters:
@@ -369,6 +378,7 @@ public:
     - false: disable
     */
     bool getAutoReconnectStatus(void);
+    
 
     /*
     Function: get status of sensor
@@ -733,6 +743,8 @@ private:
     MicroMeasure mmUpdating;
 
     // Sensor
+    int startupSensorMode;
+    int currentSensorMode;
     int sensorStatus;
     std::string errMsg;
     long long timeoutThreshold;

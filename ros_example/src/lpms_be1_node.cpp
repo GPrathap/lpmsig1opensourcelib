@@ -160,9 +160,9 @@ public:
             imu_msg.angular_velocity.z = sd.gyroIIAlignmentCalibrated.data[2]*3.1415926/180;
 
             // Fill linear acceleration data
-            imu_msg.linear_acceleration.x = sd.accCalibrated.data[0]*9.81;
-            imu_msg.linear_acceleration.y = sd.accCalibrated.data[1]*9.81;
-            imu_msg.linear_acceleration.z = sd.accCalibrated.data[2]*9.81;
+            imu_msg.linear_acceleration.x = -sd.accCalibrated.data[0]*9.81;
+            imu_msg.linear_acceleration.y = -sd.accCalibrated.data[1]*9.81;
+            imu_msg.linear_acceleration.z = -sd.accCalibrated.data[2]*9.81;
 
             /* Fill the magnetometer message */
             mag_msg.header.stamp = imu_msg.header.stamp;

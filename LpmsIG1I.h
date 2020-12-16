@@ -23,6 +23,9 @@
 #define STATUS_DATA_TIMEOUT             4
 #define STATUS_UPDATING                 5
 
+// Sensor mode
+#define SENSOR_MODE_COMMAND             0
+#define SENSOR_MODE_STREAMING           1
 
 class IG1I
 {
@@ -480,6 +483,14 @@ public:
     /////////////////////////////////////////////
     // General
     /*
+    Function: Specify sensor to streaming or command mode after connect
+    Parameters:
+    - SENSOR_MODE_COMMAND: start up in command mode
+    - SENSOR_MODE_STREAMING: start up in streaming mode
+    Returns: none
+    */
+    virtual void setStartupSensorMode(int mode) = 0;
+    /*
     Function: set auto reconnection status
     Parameters:
     - true: enable
@@ -496,7 +507,7 @@ public:
     - false: disable
     */
     virtual bool getAutoReconnectStatus(void) = 0;
-
+    
     /*
     Function: get status of sensor
     Parameters:none

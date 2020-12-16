@@ -109,6 +109,8 @@ enum {
 #define WAIT_FOR_TRANSMIT_DATA_REGISTER 3
 #define WAIT_FOR_CALIBRATION_DATA       4
 #define WAIT_FOR_SENSOR_SETTINGS        5
+#define WAIT_FOR_LPBUS_DATA_PRECISION   6
+#define WAIT_FOR_DEGRAD_OUTPUT          7
 
 #define SYSFS_GPIO_DIR "/sys/class/gpio"
 #define DEFAULT_GPIO_TOGGLE_WAIT_MS     400 //at 230400 bps

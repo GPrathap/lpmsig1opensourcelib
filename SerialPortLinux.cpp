@@ -219,6 +219,7 @@ int Serial::set_interface_attribs (int fd, int speed, int parity)
     return 0;
 }
 
+
 void Serial::createUsbDeviceMap()
 {
     struct udev *udev;
@@ -243,12 +244,20 @@ void Serial::createUsbDeviceMap()
     {
         path = udev_list_entry_get_name(node);
         dev = udev_device_new_from_syspath(udev, path);
+        
+        
         if (udev_device_get_property_value(dev, "ID_SERIAL_SHORT") &&
             udev_device_get_property_value(dev, "DEVNAME"))
         {
             string serialID(udev_device_get_property_value(dev, "ID_SERIAL_SHORT"));
             string devName(udev_device_get_property_value(dev, "DEVNAME"));
-            usbDeviceMap.insert(pair<string, string>(serialID, devName));
+            
+            string vendorId(udev_device_get_property_value(dev, "ID_VENDOR_ID"));
+            string productId(udev_device_get_property_value(dev, "ID_MODEL_ID"));
+           
+	    // Check device usb is CP2102 
+            if (vendorId=="10c4" && productId=="ea60")
+                usbDeviceMap.insert(pair<string, string>(serialID, devName));
         }
         udev_device_unref(dev);
     }

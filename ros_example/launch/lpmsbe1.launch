@@ -1,0 +1,18 @@
+<launch>
+    <!-- IG1 Sensor node -->
+    <node name="lpms_be1" pkg="lpms_ig1" type="lpms_be1_node" output="screen">
+        <param name="port" value="0001" type="string" />
+        <param name="baudrate" value="115200" type="int" />
+        <param name="frame_id" value="imu" type="string" />
+    </node>
+
+    <!-- Quaternion to Euler conversion node -->
+    <node name="quat_to_euler" pkg="lpms_ig1" type="quat_to_euler_node" />
+
+    <!-- Plots -->
+    <node name="plot_imu_gyro" pkg="rqt_plot" type="rqt_plot" 
+        args="/imu/data/angular_velocity" />
+
+    <node name="plot_imu_euler" pkg="rqt_plot" type="rqt_plot"
+        args="/rpy_angles" />
+</launch>

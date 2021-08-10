@@ -2278,6 +2278,10 @@ bool IG1::parseModbusByte(int n)
 
             packet.rxState = PACKET_START;
             break;
+
+        default:
+            packet.rxState = PACKET_START;
+            break;
         }
     }
     return true;

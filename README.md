@@ -1,4 +1,4 @@
-# LPMS-IG1/BE1 Series OpenSource Lib
+# LPMS-IG1/BE/NAV3 Series OpenSource Lib
 
 
 ## Usage
@@ -12,8 +12,9 @@
     $ cmake ..
     $ make
     $ make package
-    $ sudo dpkg -i libLpmsIG1_OpenSource-0.x.x-Linux.deb
+    $ sudo dpkg -i libLpmsIG1_OpenSource-x.y.z-Linux.deb
 ```
+
 ### 2.Compiling Sample programs
 ```bash
     $ cd linux_example
@@ -21,8 +22,10 @@
     $ cd build
     $ cmake ..
     $ make
-    $ sudo ./LpmsIG1SimpleExample
+    $ ./LpmsIG1SimpleExample
 ```
+You might require running command using sudo if current user is not in dialout group. See [Troubleshooting](#troubleshooting) 
+
 ### 3.Compiling ROS Example programs
 ```bash
 # Create ROS workspace.
@@ -34,15 +37,15 @@
 
 # Compiling ROS example programs
     $ cd ~/catkin_ws
-    $ catkin_make
     $ source ./devel/setup.bash
+    $ catkin_make
 ```
 
 Open a new terminal window and run roscore
 ```bash
     $ roscore
 ```
-Connect `LPMS-IG1/BE1` sensor to PC.
+Connect `LPMS-IG1/BE/NAV3` sensor to PC.
 Now you can run lpms_ig1 node on your other terminal windows.
 The following are some example commands to launch ros lpms_ig1 node. Please change the parameters appropriately according to your sensor settings:
 
@@ -57,11 +60,16 @@ The following are some example commands to launch ros lpms_ig1 node. Please chan
 
 ```
 
-*BE1*:
+*BE*:
 ```bash
     $ rosrun lpms_ig1 lpms_be1_node _port:=/dev/ttyUSB0 _baudrate:=115200
 ```
  
+*NAV3*:
+```bash
+    $ rosrun lpms_ig1 lpms_nav3_node _port:=/dev/ttyUSB0 _baudrate:=115200
+```
+
 Please refer to [Troubleshooting](#troubleshooting) section is error occurs.
 
 You can print out the imu data by subscribing to `/imu/data` topic
@@ -89,6 +97,11 @@ roslaunch lpms_ig1 lpmsig1_rs485.launch
 roslaunch lpms_ig1 lpmsbe1.launch
 ```
 
+*NAV3*:
+```
+roslaunch lpms_ig1 lpmsnav3.launch
+```
+
 ## Troubleshooting
 
 ### Serial connection error
@@ -112,16 +125,20 @@ To allow access to sensors connected via USB, you need to ensure that the user r
 This driver interfaces with LPMS-IG1 IMU sensor from LP-Research Inc.
 
 
-### 2.1 lpms_ig1_node / lpms_ig1_rs485_node  / lpms_be1_node
+### 2.1 lpms_ig1_node / lpms_ig1_rs485_node  / lpms_be1_node / lpms_nav3_node
 lpms_ig1_node is a driver for the LPMS-IG1 Inertial Measurement Unit. It publishes orientation, angular velocity, linear acceleration and magnetometer data (covariances are not yet supported), and complies with the [Sensor message](https://wiki.ros.org/sensor_msgs) for [IMU API](http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html) and [MagneticField](http://docs.ros.org/melodic/api/sensor_msgs/html/msg/MagneticField.html) API.
+
 Similarly lpms_ig1_rs485_node is a driver for the LPMS-IG1-RS485 Inertial Measurement Unit.
-lpms_be1_node is a driver for the LPMS-BE1 Inertial Measurement Unit.
+
+lpms_be1_node is a driver for the LPMS-BE1/BE2 Inertial Measurement Unit.
+
+lpms_nav3_node is a driver for the LPMS-NAV3 Inertial Measurement Unit.
 
 #### 2.1.1 Published Topics
 /imu/data ([sensor_msgs/Imu](http://docs.ros.org/api/sensor_msgs/html/msg/Imu.html)) 
 :   Inertial data from the IMU. Includes calibrated acceleration, calibrated angular rates and orientation. The orientation is always unit quaternion. 
 
-/imu/mag ([sensor_msgs/MagneticField](http://docs.ros.org/melodic/api/sensor_msgs/html/msg/MagneticField.html))
+/imu/mag ([sensor_msgs/MagneticField](http://docs.ros.org/melodic/api/sensor_msgs/html/msg/MagneticField.html)) *IG1 Series only*
 :   Magnetometer reading from the sensor.
 
 /imu/is_autocalibration_active ([std_msgs/Bool](http://docs.ros.org/api/std_msgs/html/msg/Bool.html), default: True)

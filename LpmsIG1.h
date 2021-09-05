@@ -23,6 +23,7 @@
 
 #include "LpmsIG1I.h"
 
+
 ///////////////////////////////////////
 // LPMod bus
 ///////////////////////////////////////
@@ -97,20 +98,32 @@ enum {
 #define FIRMWARE_PACKET_LENGTH      256
 
 // Timeout settings (us)
-#define TIMEOUT_COMMAND_TIMER       100000  // 0.1 secs
+#define TIMEOUT_COMMAND_TIMER       10000  // 0.01 secs
 #define TIMEOUT_TDR_STATUS          5000000 // 5 secs
 #define TIMEOUT_FIRMWARE_UPDATE     2000000 // 2 secs
 #define TIMEOUT_IDLE                5000000 // 5 secs
 
 // sensor response logic
-#define WAIT_IGNORE                     0
-#define WAIT_FOR_ACKNACK                1
-#define WAIT_FOR_DATA                   2
-#define WAIT_FOR_TRANSMIT_DATA_REGISTER 3
-#define WAIT_FOR_CALIBRATION_DATA       4
-#define WAIT_FOR_SENSOR_SETTINGS        5
-#define WAIT_FOR_LPBUS_DATA_PRECISION   6
-#define WAIT_FOR_DEGRAD_OUTPUT          7
+enum {
+    WAIT_IGNORE                     ,
+    WAIT_FOR_ACKNACK                ,
+    WAIT_FOR_DATA                   ,
+    WAIT_FOR_TRANSMIT_DATA_REGISTER ,
+    WAIT_FOR_CALIBRATION_DATA       ,
+    WAIT_FOR_SENSOR_SETTINGS        ,
+    WAIT_FOR_LPBUS_DATA_PRECISION   ,
+    WAIT_FOR_DEGRAD_OUTPUT          ,
+
+    // Sensor Info
+    WAIT_FOR_SERIAL_NUMBER,
+    WAIT_FOR_SENSOR_MODEL,
+    WAIT_FOR_FIRMWARE_INFO,
+    WAIT_FOR_FILTER_VERSION,
+    WAIT_FOR_IAP_CHECKSTATUS,
+
+    // Sensor Settings
+    WAIT_INTERNAL_PROCESSING_FREQ
+};
 
 #define SYSFS_GPIO_DIR "/sys/class/gpio"
 #define DEFAULT_GPIO_TOGGLE_WAIT_MS     400 //at 230400 bps
@@ -761,7 +774,7 @@ private:
     MicroMeasure mmCommandTimer;
     long long lastSendCommandTime;
 
-    // Rresponse
+    // Response
     std::mutex mLockSensorResponseQueue;
     std::queue<std::string> sensorResponseQueue;
 
@@ -773,6 +786,7 @@ private:
     bool hasNewSettings;
     IG1AdvancedSettings sensorSettings;
     MicroMeasure mmTransmitDataRegisterStatus;
+    bool useNewChecksum;
 
     // Imu data
     IG1ImuData latestImuData;

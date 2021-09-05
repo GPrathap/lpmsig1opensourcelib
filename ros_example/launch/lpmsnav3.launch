@@ -1,10 +1,11 @@
 <launch>
     <!-- IG1 Sensor node -->
-    <node name="lpms_ig1" pkg="lpms_ig1" type="lpms_ig1_node">
+    <node name="lpms_nav3" pkg="lpms_ig1" type="lpms_nav3_node" output="screen">
         <param name="port" value="/dev/ttyUSB0" type="string" />
-        <param name="baudrate" value="921600" type="int" />
+        <param name="baudrate" value="115200" type="int" />
         <param name="frame_id" value="imu" type="string" />
     </node>
+
 
     <!-- imudata rad to deg conversion node -->
     <node name="imudata_deg" pkg="lpms_ig1" type="imudata_rad_to_deg_node" />

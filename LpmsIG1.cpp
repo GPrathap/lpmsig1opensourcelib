@@ -100,6 +100,7 @@ void IG1::init()
     hasNewSettings = false;
     sensorSettings.reset();
     mmTransmitDataRegisterStatus.reset();
+    useNewChecksum = true;
 
     // Imu data
     sensorDataQueueSize = SENSOR_DATA_QUEUE_SIZE;
@@ -1289,15 +1290,18 @@ void IG1::commandGetSensorInfo()
     triggerRS485CommandMode();
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
     addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
-    addCommandQueue(IG1Command(GET_SERIAL_NUMBER, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_SENSOR_MODEL, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_FIRMWARE_INFO, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_FILTER_VERSION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_IAP_CHECKSTATUS, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_SERIAL_NUMBER, WAIT_FOR_SERIAL_NUMBER));
+    addCommandQueue(IG1Command(GET_SENSOR_MODEL, WAIT_FOR_SENSOR_MODEL));
+    addCommandQueue(IG1Command(GET_FIRMWARE_INFO, WAIT_FOR_FIRMWARE_INFO));
+    addCommandQueue(IG1Command(GET_FILTER_VERSION, WAIT_FOR_FILTER_VERSION));
+    addCommandQueue(IG1Command(GET_IAP_CHECKSTATUS, WAIT_FOR_IAP_CHECKSTATUS));
+
+    addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
+    addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_FOR_LPBUS_DATA_PRECISION));
+    addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_FOR_DEGRAD_OUTPUT));
 
     addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_FOR_DEGRAD_OUTPUT));
     addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
@@ -1306,19 +1310,19 @@ void IG1::commandGetSensorInfo()
     addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
 
+    /*
     addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
+    */
 
     addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
     addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_FOR_LPBUS_DATA_PRECISION));
 
     addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
 
     if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
@@ -1400,8 +1404,19 @@ void IG1::sendCommand(uint16_t cmd, uint16_t length, uint8_t* data)
     cmdBuffer[idx++] = length & 0xFF;
     cmdBuffer[idx++] = (length >> 8) & 0xFF;
 
-    //checksum
-    uint16_t txLrcCheck = cmd + length;
+    uint16_t txLrcCheck = 0;
+    //checksum 
+    if (useNewChecksum) 
+    {
+        for (int i = 1; i < 7; i++)
+        {
+            txLrcCheck += cmdBuffer[i];
+        }
+    }
+    else 
+    {
+        txLrcCheck = cmd + length;
+    }
 
     if (data != NULL)
     {
@@ -1879,6 +1894,7 @@ void IG1::processCommandQueue()
         {
             //IG1Command cmd = commandQueue.front();
             sendCommand(commandQueue.front().command, commandQueue.front().dataLength, commandQueue.front().data.c);
+            log.d(TAG, "Sent command: %d\n", commandQueue.front().command);
             commandQueue.front().sent = true;
             
             mmCommandTimer.reset();
@@ -2317,7 +2333,6 @@ bool IG1::parseSensorData(const LPPacket &p)
     /////////////////////////////////
     case REPLY_ACK:
         ackReceived = true;
-        //logd(TAG, "received ack\n");
         mLockCommandQueue.lock();
         if (!commandQueue.empty())
         {
@@ -2327,11 +2342,11 @@ bool IG1::parseSensorData(const LPPacket &p)
         mLockCommandQueue.unlock();
         res = "["+currentDateTime("%Y/%m/%d %H:%M:%S")+"] ACK";
         addSensorResponseToQueue(res);
+        log.d(TAG, "Received ack\n");
         break;
 
     case REPLY_NACK:
         nackReceived = true;
-        //logd(TAG, "received Nack\n");
         mLockCommandQueue.lock();
         if (!commandQueue.empty())
         {
@@ -2341,6 +2356,7 @@ bool IG1::parseSensorData(const LPPacket &p)
         mLockCommandQueue.unlock();
         res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] NACK";
         addSensorResponseToQueue(res);
+        log.d(TAG, "Received Nack\n");
         break;
 
     /////////////////////////////////
@@ -2429,38 +2445,104 @@ bool IG1::parseSensorData(const LPPacket &p)
     // Sensor info
     /////////////////////////////////
     case GET_SENSOR_MODEL:
+
+        mLockCommandQueue.lock();
+        if (!commandQueue.empty())
+        {
+            if (commandQueue.front().expectedResponse == WAIT_FOR_SENSOR_MODEL)
+                commandQueue.front().processed = true;
+        }
+        mLockCommandQueue.unlock();
+
         s.assign((char*)packet.data, packet.length);
-        sensorInfo.deviceName = s;
+        sensorInfo.deviceName = trimString(s);
+
         res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET DEVICE NAME: " + sensorInfo.deviceName;
         addSensorResponseToQueue(res);
         hasNewInfo = true;
+
+        log.d(TAG, "Received GET_SENSOR_MODEL: %s\n", sensorInfo.deviceName.c_str());
         break;
 
     case GET_FIRMWARE_INFO:
+        mLockCommandQueue.lock();
+        if (!commandQueue.empty())
+        {
+            if (commandQueue.front().expectedResponse == WAIT_FOR_FIRMWARE_INFO)
+                commandQueue.front().processed = true;
+        }
+        mLockCommandQueue.unlock();
+
         s.assign((char*)packet.data, packet.length);
-        sensorInfo.firmwareInfo = s;
+        sensorInfo.firmwareInfo = trimString(s);
+
         res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET FIRMWARE INFO: " + sensorInfo.firmwareInfo;
         addSensorResponseToQueue(res);
         hasNewInfo = true;
+
+        log.d(TAG, "Received GET_FIRMWARE_INFO: %s\n", sensorInfo.firmwareInfo.c_str());
+
+        if (sensorInfo.firmwareInfo.find("IG1-3.1.2") != string::npos
+            || sensorInfo.firmwareInfo.find("IG1-3.1.1") != string::npos
+            || sensorInfo.firmwareInfo.find("IG1-3.1.0") != string::npos
+            || sensorInfo.firmwareInfo.find("IG1-3.0") != string::npos
+            )
+        {
+            useNewChecksum = false;
+        }
+        else
+        {
+            useNewChecksum = true;
+        }
+
         break;
 
     case GET_SERIAL_NUMBER:
+        mLockCommandQueue.lock();
+        if (!commandQueue.empty())
+        {
+            if (commandQueue.front().expectedResponse == WAIT_FOR_SERIAL_NUMBER)
+                commandQueue.front().processed = true;
+        }
+        mLockCommandQueue.unlock();
+
         s.assign((char*)packet.data, packet.length);
-        sensorInfo.serialNumber = s;
+        sensorInfo.serialNumber = trimString(s);
         res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET SERIAL NUMBER: " + sensorInfo.serialNumber;
         addSensorResponseToQueue(res);
         hasNewInfo = true;
+
+        log.d(TAG, "Received GET_SERIAL_NUMBER: %s\n", sensorInfo.serialNumber.c_str());
+
         break;
 
     case GET_FILTER_VERSION:
+        mLockCommandQueue.lock();
+        if (!commandQueue.empty())
+        {
+            if (commandQueue.front().expectedResponse == WAIT_FOR_FILTER_VERSION)
+                commandQueue.front().processed = true;
+        }
+        mLockCommandQueue.unlock();
+
         s.assign((char*)packet.data, packet.length);
-        sensorInfo.filterVersion = s;
+        sensorInfo.filterVersion = trimString(s);
         res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET FILTER VERSION: " + sensorInfo.filterVersion;
         addSensorResponseToQueue(res);
         hasNewInfo = true;
+
+        log.d(TAG, "Received GET_FILTER_VERSION: %s\n", sensorInfo.filterVersion.c_str());
         break;
 
     case GET_IAP_CHECKSTATUS:
+        mLockCommandQueue.lock();
+        if (!commandQueue.empty())
+        {
+            if (commandQueue.front().expectedResponse == WAIT_FOR_IAP_CHECKSTATUS)
+                commandQueue.front().processed = true;
+        }
+        mLockCommandQueue.unlock();
+
         memcpy(i2c.c, packet.data, packet.length);
         sensorInfo.iapCheckStatus = i2c.int_val;
         res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET IAP CHECKSTATUS: ";
@@ -2468,6 +2550,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorInfo.iapCheckStatus;
         addSensorResponseToQueue(res);
         hasNewInfo = true;
+
+        log.d(TAG, "Received GET_IAP_CHECKSTATUS: %s\n", sensorInfo.iapCheckStatus? "Ready":"NA");
         break;
 
     /////////////////////////////////
@@ -2491,6 +2575,7 @@ bool IG1::parseSensorData(const LPPacket &p)
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
         connectionState = CONNECTION_STATE_VALID_SENSOR_INFO;
+        log.d(TAG, "Received GET_IMU_TRANSMIT_DATA\n");
         break;
 
     case GET_IMU_ID:
@@ -2502,6 +2587,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.sensorId;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_IMU_ID: %i\n", sensorSettings.sensorId);
         break;
 
 
@@ -2515,6 +2602,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.dataStreamFrequency;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_STREAM_FREQ: %i\n", sensorSettings.dataStreamFrequency);
         break;
     }
 
@@ -2534,6 +2623,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.useRadianOutput;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_DEGRAD_OUTPUT: %s\n", sensorSettings.useRadianOutput?"rad":"deg");
         break;
 
     case GET_GYR_THRESHOLD:
@@ -2545,6 +2636,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.gyroThreshold;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_GYR_THRESHOLD: %f\n", sensorSettings.gyroThreshold);
         break;
 
     /////////////////////////////////
@@ -2558,16 +2651,20 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.filterMode;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_FILTER_MODE: %i\n", sensorSettings.filterMode);
         break;
 
     case GET_ENABLE_GYR_AUTOCALIBRATION:
         memcpy(i2c.c, packet.data, packet.length);
         sensorSettings.enableGyroAutocalibration = i2c.int_val;
-        res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET ENBALE GYRO AUTOCALIBRATION: ";
+        res = "[" + currentDateTime("%Y/%m/%d %H:%M:%S") + "] GET ENABLE GYRO AUTOCALIBRATION: ";
         ss.clear();
         ss << res << sensorSettings.enableGyroAutocalibration;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_ENABLE_GYR_AUTOCALIBRATION: %i\n", sensorSettings.enableGyroAutocalibration);
         break;
         
     /////////////////////////////////
@@ -2581,6 +2678,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.accRange;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_ACC_RANGE: %i\n", sensorSettings.accRange);
         break;
 
     /////////////////////////////////
@@ -2594,6 +2693,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.gyroRange;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_GYR_RANGE: %i\n", sensorSettings.gyroRange);
         break;
 
     /////////////////////////////////
@@ -2607,6 +2708,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.magRange;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_MAG_RANGE: %i\n", sensorSettings.magRange);
         break;
 
     case GET_MAG_CALIBRATION_TIMEOUT:
@@ -2617,6 +2720,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.magCalibrationTimeout;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_MAG_CALIBRATION_TIMEOUT: %f\n", sensorSettings.magCalibrationTimeout);
         break;
     
     
@@ -2693,6 +2798,7 @@ bool IG1::parseSensorData(const LPPacket &p)
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
         break;
+
     /////////////////////////////////
     // UART/RS232
     /////////////////////////////////
@@ -2704,6 +2810,9 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.uartBaudrate;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+
+        log.d(TAG, "Received GET_UART_BAUDRATE: %d\n", sensorSettings.uartBaudrate);
         break;
 
     case GET_UART_FORMAT:
@@ -2714,6 +2823,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.uartDataFormat;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_UART_FORMAT: %d\n", sensorSettings.uartDataFormat);
         break;
 
 
@@ -2733,6 +2844,8 @@ bool IG1::parseSensorData(const LPPacket &p)
         ss << res << sensorSettings.uartDataPrecision;
         addSensorResponseToQueue(ss.str());
         hasNewSettings = true;
+
+        log.d(TAG, "Received GET_LPBUS_DATA_PRECISION: %d\n", sensorSettings.uartDataPrecision);
         break;
 
     /////////////////////////////////

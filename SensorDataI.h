@@ -176,6 +176,7 @@ struct IG1SettingsI
 {
     uint32_t transmitDataConfig;
     uint32_t sensorId;
+    uint32_t internalProcessingFrequency;
     uint32_t dataStreamFrequency;
     uint32_t useRadianOutput;
     uint32_t enableGyroAutocalibration;

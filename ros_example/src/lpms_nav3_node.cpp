@@ -28,7 +28,7 @@ struct IG1Command
     int dataLength;
 };
 
-class LpBE1Proxy
+class LpNAV3Proxy
 {
 public:
     // Node handler
@@ -57,7 +57,7 @@ public:
     std::string frame_id;
     int rate;
 
-    LpBE1Proxy(ros::NodeHandle h) : 
+    LpNAV3Proxy(ros::NodeHandle h) : 
         nh(h),
         private_nh("~")
     {
@@ -68,7 +68,7 @@ public:
         private_nh.param<std::string>("frame_id", frame_id, "imu");
         private_nh.param("rate", rate, 200);
 
-        // Create LpmsBE1 object 
+        // Create LpmsNAV3 object 
         sensor1 = IG1Factory();
         sensor1->setVerbose(VERBOSE_INFO);
         sensor1->setAutoReconnectStatus(autoReconnect);
@@ -76,13 +76,13 @@ public:
         imu_pub = nh.advertise<sensor_msgs::Imu>("data",1);
         autocalibration_status_pub = nh.advertise<std_msgs::Bool>("is_autocalibration_active", 1, true);
 
-        autocalibration_serv = nh.advertiseService("enable_gyro_autocalibration", &LpBE1Proxy::setAutocalibration, this);
-        autoReconnect_serv = nh.advertiseService("enable_auto_reconnect", &LpBE1Proxy::setAutoReconnect, this);
-        gyrocalibration_serv = nh.advertiseService("calibrate_gyroscope", &LpBE1Proxy::calibrateGyroscope, this);
-        resetHeading_serv = nh.advertiseService("reset_heading", &LpBE1Proxy::resetHeading, this);
-        getImuData_serv = nh.advertiseService("get_imu_data", &LpBE1Proxy::getImuData, this);
-        setStreamingMode_serv = nh.advertiseService("set_streaming_mode", &LpBE1Proxy::setStreamingMode, this);
-        setCommandMode_serv = nh.advertiseService("set_command_mode", &LpBE1Proxy::setCommandMode, this);
+        autocalibration_serv = nh.advertiseService("enable_gyro_autocalibration", &LpNAV3Proxy::setAutocalibration, this);
+        autoReconnect_serv = nh.advertiseService("enable_auto_reconnect", &LpNAV3Proxy::setAutoReconnect, this);
+        gyrocalibration_serv = nh.advertiseService("calibrate_gyroscope", &LpNAV3Proxy::calibrateGyroscope, this);
+        resetHeading_serv = nh.advertiseService("reset_heading", &LpNAV3Proxy::resetHeading, this);
+        getImuData_serv = nh.advertiseService("get_imu_data", &LpNAV3Proxy::getImuData, this);
+        setStreamingMode_serv = nh.advertiseService("set_streaming_mode", &LpNAV3Proxy::setStreamingMode, this);
+        setCommandMode_serv = nh.advertiseService("set_command_mode", &LpNAV3Proxy::setCommandMode, this);
         
          // Connects to sensor
         if (!sensor1->connect(comportNo, baudrate))
@@ -118,7 +118,7 @@ public:
         }
     }
 
-    ~LpBE1Proxy(void)
+    ~LpNAV3Proxy(void)
     {
         sensor1->release();
     }
@@ -146,20 +146,20 @@ public:
 
             // Fill orientation quaternion
             imu_msg.orientation.w = sd.quaternion.data[0];
-            imu_msg.orientation.x = -sd.quaternion.data[1];
-            imu_msg.orientation.y = -sd.quaternion.data[2];
-            imu_msg.orientation.z = -sd.quaternion.data[3];
+            imu_msg.orientation.x = sd.quaternion.data[1];
+            imu_msg.orientation.y = sd.quaternion.data[2];
+            imu_msg.orientation.z = sd.quaternion.data[3];
 
             // Fill angular velocity data
             // - scale from deg/s to rad/s
-            imu_msg.angular_velocity.x = sd.gyroIIAlignmentCalibrated.data[0]*3.1415926/180;
-            imu_msg.angular_velocity.y = sd.gyroIIAlignmentCalibrated.data[1]*3.1415926/180;
-            imu_msg.angular_velocity.z = sd.gyroIIAlignmentCalibrated.data[2]*3.1415926/180;
+            imu_msg.angular_velocity.x = sd.gyroIAlignmentCalibrated.data[0]*3.1415926/180;
+            imu_msg.angular_velocity.y = sd.gyroIAlignmentCalibrated.data[1]*3.1415926/180;
+            imu_msg.angular_velocity.z = sd.gyroIAlignmentCalibrated.data[2]*3.1415926/180;
 
             // Fill linear acceleration data
-            imu_msg.linear_acceleration.x = -sd.accCalibrated.data[0]*9.81;
-            imu_msg.linear_acceleration.y = -sd.accCalibrated.data[1]*9.81;
-            imu_msg.linear_acceleration.z = -sd.accCalibrated.data[2]*9.81;
+            imu_msg.linear_acceleration.x = sd.accCalibrated.data[0]*9.81;
+            imu_msg.linear_acceleration.y = sd.accCalibrated.data[1]*9.81;
+            imu_msg.linear_acceleration.z = sd.accCalibrated.data[2]*9.81;
 
 
             // Publish the messages
@@ -171,7 +171,7 @@ public:
     {
         // The timer ensures periodic data publishing
         updateTimer = ros::Timer(nh.createTimer(ros::Duration(1.0f/rate),
-                                                &LpBE1Proxy::update,
+                                                &LpNAV3Proxy::update,
                                                 this));
     }
 
@@ -390,9 +390,9 @@ int main(int argc, char *argv[])
     ros::AsyncSpinner spinner(0);
     spinner.start();
 
-    LpBE1Proxy lpBE1(nh);
+    LpNAV3Proxy lpNAV3(nh);
 
-    lpBE1.run();
+    lpNAV3.run();
     ros::waitForShutdown();
 
     return 0;

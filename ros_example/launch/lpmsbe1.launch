@@ -6,13 +6,13 @@
         <param name="frame_id" value="imu" type="string" />
     </node>
 
-    <!-- Quaternion to Euler conversion node -->
-    <node name="quat_to_euler" pkg="lpms_ig1" type="quat_to_euler_node" />
+    <!-- imudata rad to deg conversion node -->
+    <node name="imudata_deg" pkg="lpms_ig1" type="imudata_rad_to_deg_node" />
 
     <!-- Plots -->
     <node name="plot_imu_gyro" pkg="rqt_plot" type="rqt_plot" 
-        args="/imu/data/angular_velocity" />
+        args="/angular_vel_deg" />
 
     <node name="plot_imu_euler" pkg="rqt_plot" type="rqt_plot"
-        args="/rpy_angles" />
+        args="/rpy_deg" />
 </launch>

@@ -38,3 +38,12 @@ const int currentDateTimeInt()
 
     return ret;
 }
+
+
+std::string trimString(std::string s)
+{
+    std::string ret = s;
+    //ret.resize(ret.find('\0'));
+    ret.erase(std::find(ret.begin(), ret.end(), '\0'), ret.end());
+    return ret;
+}

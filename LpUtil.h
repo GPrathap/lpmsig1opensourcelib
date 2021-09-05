@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <time.h>
 #include <sstream>
+#include <algorithm>
+
 #include "LpMatrix.h"
 
 #define FORMAT_SPACE    0
@@ -63,5 +65,9 @@ struct MyException : public std::exception
     ~MyException() throw () {} // Updated
     const char* what() const throw() { return s.c_str(); }
 };
+
+
+std::string trimString(std::string s);
+
 
 #endif

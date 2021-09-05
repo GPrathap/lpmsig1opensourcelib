@@ -76,3 +76,9 @@ add_dependencies(lpms_be1_node ${catkin_EXPORTED_TARGETS})
 add_executable(quat_to_euler_node src/quat_to_euler_node.cpp)
 target_link_libraries(quat_to_euler_node ${catkin_LIBRARIES})
 add_dependencies(quat_to_euler_node ${catkin_EXPORTED_TARGETS})
+
+
+# angular_vel_rad_to_deg_node
+add_executable(angular_vel_rad_to_deg_node src/angular_vel_rad_to_deg_node.cpp)
+target_link_libraries(angular_vel_rad_to_deg_node ${catkin_LIBRARIES})
+add_dependencies(angular_vel_rad_to_deg_node ${catkin_EXPORTED_TARGETS})

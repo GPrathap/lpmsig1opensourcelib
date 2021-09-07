@@ -44,9 +44,13 @@ void printTask()
         if (sensor1->hasImuData())
         {
             sensor1->getImuData(sd);
-            float freq = sensor1->getDataFrequency() ;
-            logd(TAG, "t(s): %.3f eulerX: %.2f eulerY: %.2f eulerZ: %.2f Hz:%.3f\r\n", 
-                sd.timestamp*0.002f, sd.euler.data[0], sd.euler.data[1], sd.euler.data[2], freq);
+            float freq = sensor1->getDataFrequency();
+            logd(TAG, "t(s): %.3f acc: %+2.2f %+2.2f %+2.2f gyr: %+3.2f %+3.2f %+3.2f euler: %+3.2f %+3.2f %+3.2f Hz:%3.3f \r\n", 
+                sd.timestamp*0.002f, 
+                sd.accCalibrated.data[0], sd.accCalibrated.data[1], sd.accCalibrated.data[2],
+                sd.gyroIAlignmentCalibrated.data[0], sd.gyroIAlignmentCalibrated.data[1], sd.gyroIAlignmentCalibrated.data[2],
+                sd.euler.data[0], sd.euler.data[1], sd.euler.data[2], 
+                freq);
         }
         this_thread::sleep_for(chrono::milliseconds(2));
     }

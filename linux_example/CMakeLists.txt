@@ -40,6 +40,11 @@ set(LpmsIG1_RS485Example_SRCS
     LpmsIG1_RS485Example.cpp
 )
 
+set(LpmsBEx_SimpleExample_SRCS
+    ${IG1_INC}/LpMatrix.c
+    LpmsBEx_SimpleExample.cpp
+)
+
 set(LpmsNAV3_SimpleExample_SRCS
     ${IG1_INC}/LpMatrix.c
     LpmsNAV3_SimpleExample.cpp
@@ -52,6 +57,11 @@ target_link_libraries(LpmsIG1_SimpleExample LpmsIG1_OpenSourceLib rt pthread ude
 # LpmsIG1_RS485 Example
 add_executable(LpmsIG1_RS485Example ${LpmsIG1_RS485Example_SRCS} ${headers})
 target_link_libraries(LpmsIG1_RS485Example LpmsIG1_OpenSourceLib rt pthread udev)
+
+# LpmsBEx Simple Example
+add_executable(LpmsBEx_SimpleExample ${LpmsBEx_SimpleExample_SRCS} ${headers})
+target_link_libraries(LpmsBEx_SimpleExample LpmsIG1_OpenSourceLib rt pthread udev)
+
 
 # LpmsNAV3 Simple Example
 add_executable(LpmsNAV3_SimpleExample ${LpmsNAV3_SimpleExample_SRCS} ${headers})

@@ -21,6 +21,7 @@ bool Serial::open(std::string portno, int baudrate)
         close();
 
     createUsbDeviceMap();
+
     map<string, string>::iterator iter = usbDeviceMap.find(portno);
     if (iter != usbDeviceMap.end())
     {
@@ -255,8 +256,8 @@ void Serial::createUsbDeviceMap()
             string vendorId(udev_device_get_property_value(dev, "ID_VENDOR_ID"));
             string productId(udev_device_get_property_value(dev, "ID_MODEL_ID"));
            
-	    // Check device usb is CP2102 
-            if (vendorId=="10c4" && productId=="ea60")
+	       // Check device usb is CP2102 
+            if (vendorId=="10c4" && (productId=="ea60" || productId == "ea61" ))
                 usbDeviceMap.insert(pair<string, string>(serialID, devName));
         }
         udev_device_unref(dev);

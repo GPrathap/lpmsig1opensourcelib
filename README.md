@@ -37,8 +37,8 @@ You might require running command using sudo if current user is not in dialout g
 
 # Compiling ROS example programs
     $ cd ~/catkin_ws
-    $ source ./devel/setup.bash
     $ catkin_make
+    $ source ./devel/setup.bash
 ```
 
 Open a new terminal window and run roscore
@@ -180,7 +180,7 @@ lpms_nav3_node is a driver for the LPMS-NAV3 Inertial Measurement Unit.
 ~frame_id (string, default: imu) 
 :   The frame in which imu readings will be returned.
 
-~data_process_rate (int, default: 200) 
+~rate (int, default: 200) 
 :   Data processing rate of the internal loop. This rate has to be equal or larger than the data streaming frequency of the sensor to prevent internal data queue overflow.
 
 ~rs485ControlPin (int, default: -1 (disabled)) *IG1-RS485 only* 

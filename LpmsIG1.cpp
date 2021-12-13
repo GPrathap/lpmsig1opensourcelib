@@ -175,7 +175,7 @@ int IG1::connect(string _portno, int _baudrate)
         portno = _portno;
         baudrate = _baudrate;
         t = new std::thread(&IG1::updateData, this);
-        this_thread::sleep_for(chrono::milliseconds(100));
+        this_thread::sleep_for(chrono::milliseconds(200));
     }
     return sensorStatus;
 }

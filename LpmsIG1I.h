@@ -170,6 +170,8 @@ public:
 	Parameters: 
         #define DATA_STREAM_FREQ_5HZ                    5
         #define DATA_STREAM_FREQ_10HZ                   10
+        #define DATA_STREAM_FREQ_20HZ                   20
+        #define DATA_STREAM_FREQ_25HZ                   25
         #define DATA_STREAM_FREQ_50HZ                   50
         #define DATA_STREAM_FREQ_100HZ                  100
         #define DATA_STREAM_FREQ_250HZ                  250

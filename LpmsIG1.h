@@ -92,7 +92,7 @@ enum {
 #define TDR_ERROR                   3
 
 // Others
-#define SAVE_DATA_LIMIT             720000  //2 hours at 100hz  
+#define SAVE_DATA_LIMIT             60000  //10 mins at 100hz  
 #define SENSOR_DATA_QUEUE_SIZE      10
 #define SENSOR_RESPONSE_QUEUE_SIZE  50
 #define FIRMWARE_PACKET_LENGTH      256

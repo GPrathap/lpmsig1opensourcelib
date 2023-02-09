@@ -1,7 +1,7 @@
 #include <winres.h>
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 0, 0, 3, 1
-PRODUCTVERSION 0, 0, 3, 1
+FILEVERSION 0, 0, 3, 2
+PRODUCTVERSION 0, 0, 3, 2
 FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
 FILEFLAGS 0x1L
@@ -17,12 +17,12 @@ BEGIN
 BLOCK "040904b0"
 BEGIN
 VALUE "FileDescription", "LpmsIG1_OpenSourceLib"
-VALUE "FileVersion", "0, 3, 1"
+VALUE "FileVersion", "0, 3, 2"
 VALUE "InternalName", "LpmsIG1_OpenSourceLib"
 VALUE "LegalCopyright", "Copyright (C) 2021 LP-Research Inc."
 VALUE "OriginalFilename", "LpmsIG1_OpenSourceLib.dll"
 VALUE "ProductName", "LpmsIG1_OpenSourceLib"
-VALUE "ProductVersion", "0.3.1 (Build 20211217)"
+VALUE "ProductVersion", "0.3.2 (Build 20230209)"
 END
 END
 BLOCK "VarFileInfo"

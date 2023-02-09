@@ -55,6 +55,11 @@ set(LpmsCURS3_SimpleExample_SRCS
     LpmsCURS3_SimpleExample.cpp
 )
 
+set(LpmsINC1_SimpleExample_SRCS
+    ${IG1_INC}/LpMatrix.c
+    LpmsINC1_SimpleExample.cpp
+)
+
 # LpmsIG1 Simple Example
 add_executable(LpmsIG1_SimpleExample ${LpmsIG1_SimpleExample_SRCS} ${headers})
 target_link_libraries(LpmsIG1_SimpleExample LpmsIG1_OpenSourceLib rt pthread udev)
@@ -75,3 +80,7 @@ target_link_libraries(LpmsNAV3_SimpleExample LpmsIG1_OpenSourceLib rt pthread ud
 # LpmsCURS3 Simple Example
 add_executable(LpmsCURS3_SimpleExample ${LpmsCURS3_SimpleExample_SRCS} ${headers})
 target_link_libraries(LpmsCURS3_SimpleExample LpmsIG1_OpenSourceLib rt pthread udev)
+
+# LpmsINC1 Simple Example
+add_executable(LpmsINC1_SimpleExample ${LpmsINC1_SimpleExample_SRCS} ${headers})
+target_link_libraries(LpmsINC1_SimpleExample LpmsIG1_OpenSourceLib rt pthread udev)

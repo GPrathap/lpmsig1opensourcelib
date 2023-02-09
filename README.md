@@ -1,4 +1,4 @@
-# LPMS-IG1/BE/NAV3/CURS3 Series OpenSource Lib
+# LPMS-IG1/BE/NAV3/CURS3/INC1 Series OpenSource Lib
 
 
 ## Usage

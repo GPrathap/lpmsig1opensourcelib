@@ -163,9 +163,9 @@ public:
 
             // Fill angular velocity data
             // - scale from deg/s to rad/s
-            imu_msg.angular_velocity.x = sd.gyroIAlignmentCalibrated.data[0]*3.1415926/180;
-            imu_msg.angular_velocity.y = sd.gyroIAlignmentCalibrated.data[1]*3.1415926/180;
-            imu_msg.angular_velocity.z = sd.gyroIAlignmentCalibrated.data[2]*3.1415926/180;
+            imu_msg.angular_velocity.x = sd.gyroIIAlignmentCalibrated.data[0]*3.1415926/180;
+            imu_msg.angular_velocity.y = sd.gyroIIAlignmentCalibrated.data[1]*3.1415926/180;
+            imu_msg.angular_velocity.z = sd.gyroIIAlignmentCalibrated.data[2]*3.1415926/180;
 
             // Fill linear acceleration data
             imu_msg.linear_acceleration.x = -sd.accCalibrated.data[0]*9.81;

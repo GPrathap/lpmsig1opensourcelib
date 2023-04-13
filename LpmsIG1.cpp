@@ -1298,31 +1298,31 @@ void IG1::commandGetSensorInfo()
 
     addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
     addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_FOR_LPBUS_DATA_PRECISION));
-    addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_FOR_DEGRAD_OUTPUT));
+    // addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_FOR_DEGRAD_OUTPUT));
 
-    addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_GYR_THRESHOLD, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_MAG_RANGE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_GYR_THRESHOLD, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_MAG_RANGE, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
 
-    /*
-    addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
-    */
+    // /*
+    // addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
+    // */
 
-    addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
-    addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
 
-    addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
+    // addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
 
     if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));

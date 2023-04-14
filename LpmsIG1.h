@@ -282,6 +282,7 @@ public:
 
     void commandGetSensorMagCalibrationTimeout(void);
     void commandSetSensorMagCalibrationTimeout(float second);
+
     /*
     Function: 
         - send command to sensor to get sensor info
@@ -291,7 +292,26 @@ public:
     */
     void commandGetSensorInfo(void);
 
-    void commandGetSensorSettings(void)
+    /*
+    Function: 
+        - send command to sensor to get sensor settings
+        - hasSettings() will return true once sensor settings is available
+    Parameters: none
+    Returns: none
+    */
+    void commandGetSensorSettings(void);
+
+    /*
+    Function: 
+        - For the first time, send command to sensor to get sensor type. 
+        - Please call this function only during connection.
+        - It'll also get transmit data.
+        - It won't restore the previous sensor mode.
+        - hasInfo() will return true once sensor info is available
+    Parameters: none
+    Returns: none
+    */
+    void FTFTgetSensorType(void);
 
     void commandSaveParameters(void);
 
@@ -762,7 +782,6 @@ private:
     // Sensor
     int startupSensorMode;
     int currentSensorMode;
-    int previousSensorMode;
     int sensorStatus;
     std::string errMsg;
     long long timeoutThreshold;

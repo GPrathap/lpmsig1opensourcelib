@@ -1278,13 +1278,32 @@ void IG1::commandGetUartDataPrecision(void)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
+void IG1::FTFTgetSensorType()
+{
+    if (sensorStatus != STATUS_CONNECTING &&
+        sensorStatus != STATUS_CONNECTED)
+        return;
+    
+    clearCommandQueue();
+    triggerRS485CommandMode();
+    addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
+    addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
+    addCommandQueue(IG1Command(GET_SERIAL_NUMBER, WAIT_FOR_SERIAL_NUMBER));
+    addCommandQueue(IG1Command(GET_SENSOR_MODEL, WAIT_FOR_SENSOR_MODEL));
+    addCommandQueue(IG1Command(GET_FIRMWARE_INFO, WAIT_FOR_FIRMWARE_INFO));
+    addCommandQueue(IG1Command(GET_FILTER_VERSION, WAIT_FOR_FILTER_VERSION));
+    addCommandQueue(IG1Command(GET_IAP_CHECKSTATUS, WAIT_FOR_IAP_CHECKSTATUS));
+
+    addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
+}
+
 void IG1::commandGetSensorInfo()
 {
     if (sensorStatus != STATUS_CONNECTING &&
         sensorStatus != STATUS_CONNECTED)
         return;
     
-    previousSensorMode = currentSensorMode;
+    int previousSensorMode = currentSensorMode;
     
     clearCommandQueue();
     triggerRS485CommandMode();
@@ -1298,31 +1317,31 @@ void IG1::commandGetSensorInfo()
 
     addCommandQueue(IG1Command(GET_IMU_TRANSMIT_DATA, WAIT_FOR_TRANSMIT_DATA_REGISTER));
     addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_FOR_LPBUS_DATA_PRECISION));
-    // addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_FOR_DEGRAD_OUTPUT));
+    addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_FOR_DEGRAD_OUTPUT));
 
-    // addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_GYR_THRESHOLD, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_MAG_RANGE, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_IMU_ID, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_STREAM_FREQ, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_ACC_RANGE, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_GYR_RANGE, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_ENABLE_GYR_AUTOCALIBRATION, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_GYR_THRESHOLD, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_MAG_RANGE, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_MAG_CALIBRATION_TIMEOUT, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_FILTER_MODE, WAIT_IGNORE));
 
-    // /*
-    // addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
-    // */
+    /*
+    addCommandQueue(IG1Command(GET_CAN_START_ID, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_CAN_BAUDRATE, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_CAN_DATA_PRECISION, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_CAN_MODE, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_CAN_MAPPING, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_CAN_HEARTBEAT, WAIT_IGNORE));
+    */
 
-    // addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
-    // addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_UART_BAUDRATE, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
 
-    // addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
+    addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
 
     if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
         addCommandQueue(IG1Command(GOTO_STREAM_MODE));
@@ -1330,7 +1349,19 @@ void IG1::commandGetSensorInfo()
 
 void IG1::commandGetSensorSettings()
 {
-    if(sensorInfo.deviceName.find("BE-SM") == string::npos)
+    if (sensorStatus != STATUS_CONNECTING &&
+    sensorStatus != STATUS_CONNECTED)
+    return;
+    
+    int previousSensorMode = currentSensorMode;
+    
+    clearCommandQueue();
+    triggerRS485CommandMode();
+    addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
+    addCommandQueue(IG1Command(GOTO_COMMAND_MODE));
+    addCommandQueue(IG1Command(GET_LPBUS_DATA_PRECISION, WAIT_FOR_LPBUS_DATA_PRECISION));
+
+    if(sensorInfo.firmwareInfo.find("BE-SM") == string::npos)
     {
         addCommandQueue(IG1Command(GET_DEGRAD_OUTPUT, WAIT_FOR_DEGRAD_OUTPUT));
 
@@ -1357,10 +1388,10 @@ void IG1::commandGetSensorSettings()
         addCommandQueue(IG1Command(GET_UART_FORMAT, WAIT_IGNORE));
 
         addCommandQueue(IG1Command(GET_GPS_TRANSMIT_DATA, WAIT_IGNORE));
-
-        if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
-            addCommandQueue(IG1Command(GOTO_STREAM_MODE));
     }
+
+    if (previousSensorMode == SENSOR_MODE_STREAMING || autoReconnect)
+            addCommandQueue(IG1Command(GOTO_STREAM_MODE));
 }
 
 void IG1::commandSaveParameters()
@@ -2111,7 +2142,7 @@ void IG1::updateData()
                         connectionState = CONNECTION_STATE_WAITING_SENSOR_INFO;
                         mmTransmitDataRegisterStatus.reset();
                         log.i(TAG, "Get sensor info\n");
-                        commandGetSensorInfo();
+                        FTFTgetSensorType();
                         break;
                     }
 
@@ -2142,7 +2173,7 @@ void IG1::updateData()
                         connectionState = CONNECTION_STATE_CONNECTED;
                         reconnectCount = 0;
                         log.i(TAG, "Sensor connected\n");
-                            commandGetSensorSettings();
+                        commandGetSensorSettings();
                         break;
                     }
 

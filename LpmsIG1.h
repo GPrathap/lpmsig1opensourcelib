@@ -762,6 +762,7 @@ private:
     // Sensor
     int startupSensorMode;
     int currentSensorMode;
+    int previousSensorMode;
     int sensorStatus;
     std::string errMsg;
     long long timeoutThreshold;

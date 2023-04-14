@@ -291,6 +291,8 @@ public:
     */
     void commandGetSensorInfo(void);
 
+    void commandGetSensorSettings(void)
+
     void commandSaveParameters(void);
 
     void commandResetFactory(void);

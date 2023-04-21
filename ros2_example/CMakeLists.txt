@@ -28,6 +28,9 @@ add_executable(lpms_ig1_rs485_node
 add_executable(lpms_ig1_rs485_client
   src/lpms_ig1_rs485_client.cpp
 )
+add_executable(lpms_si1_node
+  src/lpms_si1_node.cpp
+)
 add_executable(quat_to_euler_node
   src/quat_to_euler_node.cpp
 )
@@ -39,12 +42,14 @@ target_link_libraries(lpms_ig1_node LpmsIG1_OpenSourceLib)
 target_link_libraries(lpms_be1_node LpmsIG1_OpenSourceLib)
 target_link_libraries(lpms_nav3_node LpmsIG1_OpenSourceLib)
 target_link_libraries(lpms_ig1_rs485_node LpmsIG1_OpenSourceLib)
+target_link_libraries(lpms_si1_node LpmsIG1_OpenSourceLib)
 
 ament_target_dependencies(lpms_ig1_node rclcpp std_msgs std_srvs sensor_msgs)
 ament_target_dependencies(lpms_be1_node rclcpp std_msgs std_srvs sensor_msgs)
 ament_target_dependencies(lpms_nav3_node rclcpp std_msgs std_srvs sensor_msgs)
 ament_target_dependencies(lpms_ig1_rs485_node rclcpp std_msgs std_srvs sensor_msgs)
 ament_target_dependencies(lpms_ig1_rs485_client rclcpp std_srvs)
+ament_target_dependencies(lpms_si1_node rclcpp std_msgs std_srvs sensor_msgs)
 ament_target_dependencies(quat_to_euler_node rclcpp sensor_msgs tf2)
 ament_target_dependencies(imudata_rad_to_deg_node rclcpp sensor_msgs tf2)
 
@@ -57,6 +62,8 @@ install(TARGETS lpms_nav3_node
  install(TARGETS lpms_ig1_rs485_node
   DESTINATION lib/${PROJECT_NAME})
 install(TARGETS lpms_ig1_rs485_client
+  DESTINATION lib/${PROJECT_NAME})
+install(TARGETS lpms_si1_node
   DESTINATION lib/${PROJECT_NAME})
 install(TARGETS quat_to_euler_node
   DESTINATION lib/${PROJECT_NAME})

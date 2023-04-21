@@ -41,6 +41,10 @@ set(lpms_curs3_node_SRCS
     src/lpms_curs3_node.cpp
 )
 
+set(lpms_si1_node_SRCS
+    src/lpms_si1_node.cpp
+)
+
 ## Declare a catkin package
 catkin_package()
 
@@ -95,6 +99,14 @@ target_link_libraries(lpms_curs3_node
   LpmsIG1_OpenSourceLib.so
  )
 add_dependencies(lpms_curs3_node ${catkin_EXPORTED_TARGETS})
+
+# lpms_si1_node
+add_executable(lpms_si1_node ${lpms_si1_node_SRCS})
+target_link_libraries(lpms_si1_node
+  ${catkin_LIBRARIES}
+  LpmsIG1_OpenSourceLib.so
+ )
+add_dependencies(lpms_si1_node ${catkin_EXPORTED_TARGETS})
 
 # imudata_rad_to_deg_node
 add_executable(imudata_rad_to_deg_node src/imudata_rad_to_deg_node.cpp)

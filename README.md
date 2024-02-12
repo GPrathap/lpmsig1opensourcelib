@@ -1,4 +1,5 @@
-# LPMS-IG1/BE/NAV3/CURS3/INC1 Series OpenSource Lib
+# LPMS-IG1/BE/NAV3/CURS3/INC1 Series OpenSource Lib (original repo https://bitbucket.org/lpresearch/lpmsig1opensourcelib.git)
+
 
 
 ## Usage
